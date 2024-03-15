@@ -2,7 +2,6 @@ import { assert, chai, expect } from '@open-wc/testing';
 import { onCLS } from 'web-vitals/onCLS.js';
 import { helpers } from '@lwc/wds-core/browser';
 
-
 const { hydrateElement, insertMarkupIntoDom, renderToMarkup } = helpers;
 
 chai.use((_chai, utils) => {

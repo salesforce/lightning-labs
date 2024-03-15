@@ -1,10 +1,5 @@
 import { assert, chai } from '@open-wc/testing';
-import {
-  getPixelData,
-  helpers,
-  pixelmatch,
-  captureElement,
-} from '@lwc/wds-core/browser';
+import { getPixelData, helpers, pixelmatch, captureElement } from '@lwc/wds-core/browser';
 
 const { clientSideRender, hydrateElement, insertMarkupIntoDom, renderToMarkup } = helpers;
 

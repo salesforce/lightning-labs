@@ -1,6 +1,6 @@
 import { executeServerCommand } from '@web/test-runner-commands';
 
-const INSIDE_TEST_RUNNER = !!(new URL(window.location.href).searchParams.get('wtr-session-id'));
+const INSIDE_TEST_RUNNER = !!new URL(window.location.href).searchParams.get('wtr-session-id');
 
 let nextRequestId = 0;
 const elementsForCapture = (globalThis.__ELEMENTS_FOR_CAPTURE__ = new Map());
@@ -65,4 +65,6 @@ async function captureElementInTest(el) {
   }
 }
 
-export const captureElement = INSIDE_TEST_RUNNER ? captureElementInTest : captureElementInPlayground;
+export const captureElement = INSIDE_TEST_RUNNER
+  ? captureElementInTest
+  : captureElementInPlayground;
