@@ -10,6 +10,9 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    env:
+      HUSKY: 0
+
     strategy:
       matrix:
         node-version: [18.x, 20.x]
