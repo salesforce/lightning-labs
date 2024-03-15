@@ -1,0 +1,66 @@
+<template>
+  <sl-dialog
+    lwc:external
+    label="Input JavaScript Expression"
+    class="dialog-focus"
+    style="--width: 50vw;"
+  >
+    <pg-codejar
+      id="prop-value-editor"
+      nomargin
+      content={propValues.get(currentlyEditedProp)}
+    ></pg-codejar>
+    <div class="alert-container">
+      <sl-alert
+        lwc:external
+        variant="warning"
+        duration="30000"
+        closable="true"
+      >
+        <sl-icon lwc:external slot="icon" name="exclamation-triangle"></sl-icon>
+        The value you have entered is not a valid JavaScript expression.
+      </sl-alert>
+    </div>
+    <sl-button
+      lwc:external
+      slot="footer"
+      variant="primary"
+      onclick={savePropValue}
+    >Save</sl-button>
+  </sl-dialog>
+  <table>
+    <thead>
+      <tr>
+        <th class="name">name</th>
+        <th class="enabled">enabled</th>
+        <th class="value">JavaScript expression</th>
+      </tr>
+    </thead>
+    <tbody>
+      <template for:each={propnames} for:item="propName">
+        <tr key={propName}>
+          <td class="name">{propName}</td>
+          <td class="enabled">
+            <sl-switch
+              lwc:external
+              size="small"
+              checked={enabledProps.has(propName)}
+              data-propname={propName}
+            ></sl-switch>
+          </td>
+          <td
+            class={`value ${enabledProps.has(propName) ? 'is-enabled' : ''}`}
+            onclick={() => openPropDialog(propName)}
+          >
+            <div class="shorthand">
+              {getDisplayValue(propName)}
+            </div>
+            <div class="hover-indicator">
+              Click to Edit
+            </div>
+          </td>
+        </tr>
+      </template>
+    </tbody>
+  </table>
+</template>

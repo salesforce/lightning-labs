@@ -1,0 +1,33 @@
+sl-image-comparer::part(divider) {
+  background-color: rgba(80, 80, 80, 0.6);
+}
+
+sl-image-comparer::part(handle) {
+  background-color: rgb(80, 80, 80);
+  color: white;
+}
+
+.dialog-focus::part(base) {
+  align-items: start;
+  padding-top: 32px;
+}
+
+.wrapper {
+  position: relative;
+}
+
+.close-dialog {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 100;
+}
+
+canvas {
+  width: 100%;
+}
+
+.centered-message {
+  width: 100%;
+  text-align: center;
+}

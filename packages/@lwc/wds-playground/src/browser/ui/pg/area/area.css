@@ -1,0 +1,9 @@
+.area {
+    border: solid 1px var(--sl-color-neutral-200);
+    border-radius: 3px;
+    background-color: var(--sl-color-neutral-0);
+    min-width: 20rem;
+    max-width: 100%;
+    padding: 16px;
+    margin-top: 6px;
+}

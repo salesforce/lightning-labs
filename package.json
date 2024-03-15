@@ -1,0 +1,25 @@
+{
+  "name": "@lwc/lightning-labs",
+  "private": true,
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "check": "biome check ./example ./packages",
+    "fix": "biome check --apply ./example ./packages",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "MIT",
+  "workspaces": [
+    "example",
+    "packages/@lwc/test-runner",
+    "packages/@lwc/wds-core",
+    "packages/@lwc/wds-playground",
+    "packages/ultemp"
+  ],
+  "devDependencies": {
+    "@biomejs/biome": "1.6.1"
+  }
+}

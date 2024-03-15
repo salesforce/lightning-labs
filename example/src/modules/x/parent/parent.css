@@ -1,0 +1,11 @@
+.parent {
+	color: white;
+	background-color: rgb(80, 120, 70);
+	padding: 8px;
+}
+
+.child-wrapper {
+	background-color: rgb(80, 120, 120);
+	padding: 8px;
+	color: white;
+}

@@ -1,0 +1,37 @@
+{
+	"$schema": "https://biomejs.dev/schemas/1.6.1/schema.json",
+	"organizeImports": {
+		"enabled": false
+	},
+	"files": {
+		"ignore": ["*.excessive-spec.js"]
+	},
+	"formatter": {
+		"indentStyle": "space",
+		"indentWidth": 2,
+		"lineWidth": 100
+	},
+	"javascript": {
+		"formatter": {
+			"quoteStyle": "single"
+		}
+	},
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"recommended": true
+		}
+	},
+	"overrides": [
+		{
+			"include": ["**"],
+			"linter": {
+				"rules": {
+					"suspicious": {
+						"noAssignInExpressions": "off"
+					}
+				}
+			}
+		}
+	]
+}

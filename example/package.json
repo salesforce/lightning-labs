@@ -1,0 +1,11 @@
+{
+  "dependencies": {
+    "@lwc/test-runner": "*",
+    "@lwc/wds-playground": "*"
+  },
+  "scripts": {
+    "test": "test-lwcs ./**/*.spec.js",
+    "test-excessive": "test-lwcs ./**/*.excessive-spec.js",
+    "playground": "playground x/parent --open"
+  }
+}

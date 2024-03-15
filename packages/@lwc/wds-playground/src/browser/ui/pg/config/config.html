@@ -1,0 +1,50 @@
+<template>
+	<div class="side-by-side-parent">
+		<pg-area class="side-by-side">
+			<h3>Steps</h3>
+			<p>When the render button is clicked:</p>
+			<sl-checkbox id="step1" lwc:external checked={step1checked} indeterminate={step1ind}>
+				render to markup
+			</sl-checkbox>
+			<sl-checkbox id="step2" lwc:external checked={step2checked} indeterminate={step2ind}>
+				insert into DOM
+			</sl-checkbox>
+			<sl-checkbox id="step3" lwc:external checked={step3checked} indeterminate={step3ind}>
+				hydrate component
+			</sl-checkbox>
+		</pg-area>
+
+		<pg-area class="side-by-side">
+			<h3>Breakpoints</h3>
+			<p>Pause the debugger prior to:</p>
+			<sl-checkbox id="break1" lwc:external checked={breakOnMarkup}>
+				render to markup
+			</sl-checkbox>
+			<sl-checkbox id="break2" lwc:external checked={breakOnInsert}>
+				insert into DOM
+			</sl-checkbox>
+			<sl-checkbox id="break3" lwc:external checked={breakOnHydrate}>
+				hydrate component
+			</sl-checkbox>
+		</pg-area>
+
+		<pg-area>
+			<h3>Misc</h3>
+			<sl-checkbox id="filechange" lwc:external checked={reloadOnFileChange}>
+				re-render when code is updated
+			</sl-checkbox>
+		</pg-area>
+
+		<pg-area>
+			<h3>Component Props</h3>
+			<pg-config-props
+				onchange={setComponentProps}
+				propnames={propnames}
+			></pg-config-props>
+		</pg-area>
+	</div>
+
+	<button class='big-render' onclick={triggerRender}>
+		Collapse & Render
+	</button>
+</template>

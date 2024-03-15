@@ -1,0 +1,38 @@
+<template>
+  <sl-dialog
+    lwc:external
+    class="dialog-focus"
+    style="--width: 80vw;"
+  >
+    <div class="wrapper">
+      <sl-icon-button
+        lwc:external
+        class="close-dialog"
+        name="x-lg"
+        label="Close"
+        onclick={close}
+      ></sl-icon-button>
+
+      <sl-tab-group lwc:external id="tab-group">
+        <sl-tab lwc:external slot="nav" panel="slide">Slide</sl-tab>
+        <sl-tab lwc:external slot="nav" panel="diff">Diff</sl-tab>
+        <sl-tab-panel lwc:external name="slide">
+          <sl-image-comparer lwc:external position="10">
+            <img slot="before" src={ssrUrl} width="100%">
+            <img slot="after" src={csrUrl} width="100%">
+          </sl-image-comparer>
+        </sl-tab-panel>
+        <sl-tab-panel lwc:external name="diff">
+          <template lwc:if={numNonmatchingPixels === 0}>
+            <div class="centered-message">
+              Elements are identical
+            </div>
+          </template>
+          <template lwc:else>
+            <canvas id="diff-view" width={diffWidth} height={diffHeight}></canvas>
+          </template>
+        </sl-tab-panel>
+      </sl-tab-group>
+    </div>
+  </sl-dialog>
+</template>

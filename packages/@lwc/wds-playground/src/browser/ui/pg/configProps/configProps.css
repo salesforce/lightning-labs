@@ -1,0 +1,86 @@
+td, th {
+	padding: 4px 8px;
+	border: 1px dotted #777;
+}
+
+table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+table tr:first-child th {
+	border-top: 0;
+}
+
+table tr td:first-child, table tr th:first-child {
+	border-left: 0;
+}
+
+table tr:last-child td {
+	border-bottom: 0;
+}
+
+table tr td:last-child, table tr th:last-child {
+	border-right: 0;
+	max-width: 40vw;
+	overflow-x: scroll;
+	cursor: pointer;
+}
+
+.name {
+	text-align: right;
+}
+
+.enabled {
+	text-align: center;
+}
+
+.value {
+	position: relative;
+	text-align: left;
+	font-family: var(--sl-font-mono);
+}
+
+.hover-indicator {
+	position: absolute;
+	top: 0;
+	left: 0;
+	height: 100%;
+	width: 100%;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	opacity: 0;
+
+	background-color: rgba(40, 40, 40, 0.6);
+	color: white;
+}
+
+.hover-indicator:hover {
+	opacity: 1;
+}
+
+sl-dialog::part(title) {
+	padding-bottom: 0;
+}
+
+sl-dialog::part(footer) {
+	padding-top: 0;
+}
+
+uplift-codejar::part(edit-box) {
+	min-height: 35vh;
+}
+
+.alert-container {
+	position: relative;
+}
+
+.alert-container sl-alert {
+    display: block;
+	position: absolute;
+    bottom: 0;
+    width: calc(100% - 16px);
+    margin-left: 6px;
+    margin-bottom: 6px;
+}

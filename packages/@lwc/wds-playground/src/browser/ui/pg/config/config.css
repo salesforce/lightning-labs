@@ -1,0 +1,51 @@
+sl-checkbox {
+    display: block;
+    margin-bottom: 6px;
+}
+
+h3 {
+    margin-top: 0;
+    font-weight: 300;
+}
+
+.big-render {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    background-color: var(--sl-color-primary-600);
+    margin-top: 16px;
+    padding: var(--sl-spacing-medium);
+    position: relative;
+    left: calc(var(--sl-spacing-medium) * -1);
+    width: calc(100% + var(--sl-spacing-medium) * 2);
+    top: var(--sl-spacing-medium);
+    border: none;
+    border-radius: 0 0 3px 3px;
+    text-decoration: none;
+    cursor: pointer;
+    font-size: var(--sl-button-font-size-medium);
+    font-family: var(--sl-input-font-family);
+    font-weight: var(--sl-font-weight-semibold);
+}
+
+.big-render:hover {
+    background-color: var(--sl-color-primary-700);
+}
+
+hr {
+    border: solid 0.5px var(--sl-color-neutral-200);
+    margin-top: 16px;
+    margin-bottom: 16px;
+}
+
+.side-by-side-parent {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.side-by-side-parent uplift-area {
+    flex-grow: 1;
+    min-width: calc(50% - 8px);
+    margin: 0 4px;
+}

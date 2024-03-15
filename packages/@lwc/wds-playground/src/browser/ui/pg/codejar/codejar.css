@@ -1,0 +1,17 @@
+.editor {
+  margin: 16px;
+  padding: 16px;
+  border-style: solid;
+  border-width: 2px;
+  border-color: black;
+  background-color: white;
+  color: black;
+
+  font-family: var(--sl-font-mono);
+  font-size: var(--sl-font-size-medium);
+  font-weight: var(--sl-font-weight-normal);
+}
+
+:host(.no-margin) .editor {
+  margin: 0;
+}
