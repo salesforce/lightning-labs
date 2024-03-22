@@ -49,7 +49,7 @@
                 <template lwc:if={ssrEnabled}>
                     <div class="render-container">
                         <h2>Rendered (SSR)</h2>
-                        <div class="component-container">
+                        <div id="ssr-container" class="component-container">
                             <div id="ssr-parent"></div>
                         </div>
                     </div>
@@ -57,7 +57,7 @@
                 <template lwc:if={csrEnabled}>
                     <div class="render-container">
                         <h2>Rendered (CSR only)</h2>
-                        <div class="component-container">
+                        <div id="csr-container" class="component-container">
                             <div id="csr-parent"></div>
                         </div>
                     </div>
@@ -71,6 +71,11 @@
                 </div>
                 <pg-codejar id="markup" content={generatedMarkup}></pg-codejar>
             </pg-area>
+
+            <sl-details lwc:external lwc:if={config && config.observeLayoutShift} summary="Layout shift events">
+                <pg-shift layout-shift-attributions={layoutShiftAttributions}>
+                </pg-shift>
+            </sl-details>
         </div>
     </div>
 </template>

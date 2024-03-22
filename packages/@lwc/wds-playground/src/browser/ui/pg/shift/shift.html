@@ -1,0 +1,17 @@
+<template>
+    <div class="no-shift" lwc:if={layoutShiftAttributions.length === 0}> 
+        <p> Hooray! No layout shifts reported!</p>
+    </div>
+    <div class="shift">
+        <div class="row" lwc:if={layoutShiftAttributions.length > 0}>
+            <div class="column">
+                Previous State
+            </div>
+            <div class="column">
+                Current State
+            </div>
+        </div>
+        <div class="append">
+        </div>
+    </div>
+</template>

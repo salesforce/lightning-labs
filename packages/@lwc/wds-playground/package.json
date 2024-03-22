@@ -9,13 +9,14 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@lwc/wds-core": "0.1.0",
     "@lwc/metadata": "^3.8.0-0",
+    "@lwc/wds-core": "0.1.0",
     "@shoelace-style/shoelace": "^2.9.0",
     "chrome-launcher": "^1.1.0",
     "codejar": "^4.2.0",
     "minimist": "^1.2.8",
-    "prettier": "^2.8.8"
+    "prettier": "^2.8.8",
+    "web-vitals": "^3.5.2"
   },
   "bin": {
     "playground": "./bin.js"

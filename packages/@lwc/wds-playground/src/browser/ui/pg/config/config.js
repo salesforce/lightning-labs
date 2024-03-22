@@ -10,6 +10,7 @@ export default class Config extends LightningElement {
   @api breakOnInsert = false;
   @api breakOnHydrate = false;
   @api reloadOnFileChange = false;
+  @api observeLayoutShift = false;
 
   hasRendered = false;
   componentProps = {};
@@ -63,6 +64,11 @@ export default class Config extends LightningElement {
       this.reloadOnFileChange = !this.reloadOnFileChange;
       this.dispatchConfig();
     });
+
+    this.template.querySelector('#layoutshift').addEventListener('sl-change', () => {
+      this.observeLayoutShift = !this.observeLayoutShift;
+      this.dispatchConfig();
+    });
   }
 
   setComponentProps(evt) {
@@ -80,6 +86,7 @@ export default class Config extends LightningElement {
           breakOnHydrate: this.breakOnHydrate,
           componentProps: this.componentProps,
           reloadOnFileChange: this.reloadOnFileChange,
+          observeLayoutShift: this.observeLayoutShift,
         },
       }),
     );

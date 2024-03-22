@@ -4,6 +4,7 @@ import '@shoelace-style/shoelace/dist/components/icon-button/icon-button.js';
 import '@shoelace-style/shoelace/dist/components/switch/switch.js';
 import '@shoelace-style/shoelace/dist/components/tooltip/tooltip.js';
 import { LightningElement, api } from 'lwc';
+import { onCLS } from 'web-vitals';
 import htmlPlugin from 'prettier/esm/parser-html.mjs';
 import prettier from 'prettier/esm/standalone.mjs';
 
@@ -28,6 +29,8 @@ export default class Playground extends LightningElement {
   ssrIsRendered = false;
   csrIsRendered = false;
   cacheBust = false;
+  layoutShiftAttributions = [];
+  observingLayoutShift = false;
 
   hasRendered = false;
   renderedCallback() {
@@ -45,6 +48,56 @@ export default class Playground extends LightningElement {
     this.template.querySelector('.toggle-csr').addEventListener('sl-change', () => {
       this.csrEnabled = !this.csrEnabled;
     });
+  }
+
+  isDOMRectWithinBound(componentDOMRect) {
+    const containerElement = this.template.querySelector('#ssr-container');
+    const containerDOMRect = containerElement.getBoundingClientRect();
+
+    return true;
+
+    // return (
+    //   containerDOMRect.left <= componentDOMRect.left &&
+    //   containerDOMRect.right >= componentDOMRect.right &&
+    //   containerDOMRect.top <= componentDOMRect.top &&
+    //   containerDOMRect.bottom >= componentDOMRect.bottom);
+  }
+
+  attachOnCLSListener() {
+    if (this.observingLayoutShift) {
+      return;
+    }
+
+    this.observingLayoutShift = true;
+
+    onCLS(
+      (report) => {
+        const { value, entries } = report;
+
+        if (value > 0) {
+          for (const layoutShift of entries) {
+            const { hadRecentInput, sources } = layoutShift;
+
+            if (hadRecentInput === false && sources.length > 0) {
+              for (const layoutShiftAttribution of sources) {
+                const { previousRect, currentRect } = layoutShiftAttribution;
+
+                // check if previous Rect is in bound to container
+                if (this.isDOMRectWithinBound(previousRect)) {
+                  this.layoutShiftAttributions = [
+                    ...this.layoutShiftAttributions,
+                    [previousRect, currentRect],
+                  ];
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        reportAllChanges: true,
+      },
+    );
   }
 
   get availableComponentPropNames() {
@@ -67,6 +120,10 @@ export default class Playground extends LightningElement {
 
   onConfigChange(evt) {
     this.config = evt.detail;
+
+    if (this.config.observeLayoutShift) {
+      this.attachOnCLSListener();
+    }
   }
 
   onConfigRenderClicked() {
@@ -125,7 +182,8 @@ export default class Playground extends LightningElement {
     const componentParentEl = this.template.querySelector('#ssr-parent');
     componentParentEl.innerHTML = '';
 
-    const { enabledSteps, breakOnMarkup, breakOnInsert, breakOnHydrate } = this.config;
+    const { enabledSteps, breakOnMarkup, breakOnInsert, breakOnHydrate, observeLayoutShift } =
+      this.config;
 
     if (enabledSteps === 0) {
       return;
@@ -151,6 +209,10 @@ export default class Playground extends LightningElement {
 
     if (enabledSteps === 2) {
       return;
+    }
+
+    if (observeLayoutShift) {
+      await new Promise((resolve) => setTimeout(resolve, 550));
     }
 
     if (breakOnHydrate) {
