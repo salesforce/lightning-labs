@@ -11,7 +11,7 @@ export default class App extends LightningElement {
       throw new Error('When do I get called?');
     }
 
-    if (!import.meta.env.SSR) {
+    if (!import.meta.env.SSR && this.shiftLayout) {
       const parentElement = this.template.querySelector('.parent');
       parentElement.style.margin = '20px';
     }
