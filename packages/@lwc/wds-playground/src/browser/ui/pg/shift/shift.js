@@ -23,9 +23,14 @@ export default class Shift extends LightningElement {
   }
 
   renderDifferences() {
+    const appendElement = this.template.querySelector('.append');
+    if (appendElement) {
+      // clean up any prior observed layout shift elements
+      appendElement.replaceChildren();
+    }
+
     for (const layoutShiftAttribution of this.layoutShiftAttributions) {
       const highlightedHTML = this.highlightDifferences(layoutShiftAttribution);
-      const appendElement = this.template.querySelector('.append');
       const containerRow = document.createElement('div');
       containerRow.className = 'row';
       const prevState = document.createElement('div');

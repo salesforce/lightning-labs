@@ -4,7 +4,6 @@ import '@shoelace-style/shoelace/dist/components/icon-button/icon-button.js';
 import '@shoelace-style/shoelace/dist/components/switch/switch.js';
 import '@shoelace-style/shoelace/dist/components/tooltip/tooltip.js';
 import { LightningElement, api } from 'lwc';
-import { onCLS } from 'web-vitals';
 import htmlPlugin from 'prettier/esm/parser-html.mjs';
 import prettier from 'prettier/esm/standalone.mjs';
 
@@ -30,7 +29,7 @@ export default class Playground extends LightningElement {
   csrIsRendered = false;
   cacheBust = false;
   layoutShiftAttributions = [];
-  observingLayoutShift = false;
+  layoutShiftObserver;
 
   hasRendered = false;
   renderedCallback() {
@@ -39,6 +38,7 @@ export default class Playground extends LightningElement {
     }
     this.hasRendered = true;
     this.attachListeners();
+    this.createLayoutShiftListener();
   }
 
   attachListeners() {
@@ -50,54 +50,23 @@ export default class Playground extends LightningElement {
     });
   }
 
-  isDOMRectWithinBound(componentDOMRect) {
-    const containerElement = this.template.querySelector('#ssr-container');
-    const containerDOMRect = containerElement.getBoundingClientRect();
+  createLayoutShiftListener() {
+    this.layoutShiftObserver = new PerformanceObserver((list) => {
+      for (const layoutShiftEntry of list.getEntries()) {
+        const { hadRecentInput, sources } = layoutShiftEntry;
 
-    return true;
+        if (hadRecentInput === false && sources.length > 0) {
+          for (const layoutShiftAttribution of sources) {
+            const { previousRect, currentRect } = layoutShiftAttribution;
 
-    // return (
-    //   containerDOMRect.left <= componentDOMRect.left &&
-    //   containerDOMRect.right >= componentDOMRect.right &&
-    //   containerDOMRect.top <= componentDOMRect.top &&
-    //   containerDOMRect.bottom >= componentDOMRect.bottom);
-  }
-
-  attachOnCLSListener() {
-    if (this.observingLayoutShift) {
-      return;
-    }
-
-    this.observingLayoutShift = true;
-
-    onCLS(
-      (report) => {
-        const { value, entries } = report;
-
-        if (value > 0) {
-          for (const layoutShift of entries) {
-            const { hadRecentInput, sources } = layoutShift;
-
-            if (hadRecentInput === false && sources.length > 0) {
-              for (const layoutShiftAttribution of sources) {
-                const { previousRect, currentRect } = layoutShiftAttribution;
-
-                // check if previous Rect is in bound to container
-                if (this.isDOMRectWithinBound(previousRect)) {
-                  this.layoutShiftAttributions = [
-                    ...this.layoutShiftAttributions,
-                    [previousRect, currentRect],
-                  ];
-                }
-              }
-            }
+            this.layoutShiftAttributions = [
+              ...this.layoutShiftAttributions,
+              [previousRect, currentRect],
+            ];
           }
         }
-      },
-      {
-        reportAllChanges: true,
-      },
-    );
+      }
+    });
   }
 
   get availableComponentPropNames() {
@@ -121,8 +90,13 @@ export default class Playground extends LightningElement {
   onConfigChange(evt) {
     this.config = evt.detail;
 
-    if (this.config.observeLayoutShift) {
-      this.attachOnCLSListener();
+    if (this.layoutShiftObserver) {
+      if (this.config.observeLayoutShift) {
+        this.layoutShiftObserver.observe({ type: 'layout-shift', buffered: true });
+      } else {
+        // cleanup
+        this.layoutShiftObserver.disconnect();
+      }
     }
   }
 
@@ -164,6 +138,7 @@ export default class Playground extends LightningElement {
     );
 
     if (this.ssrEnabled) {
+      this.layoutShiftAttributions = [];
       await this.renderComponentSSR(componentPropsEvald);
       this.ssrIsRendered = true;
     }
