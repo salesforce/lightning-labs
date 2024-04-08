@@ -12,8 +12,8 @@ export default class App extends LightningElement {
     }
 
     if (!import.meta.env.SSR && this.shiftLayout) {
-      const parentElement = document.querySelector('#mount');
-      parentElement.style.margin = '16px';
+      const parentElement = this.template.querySelector('.parent');
+      parentElement.style.margin = '20px';
     }
 
     if (!import.meta.env.SSR && this.mutateDOM) {

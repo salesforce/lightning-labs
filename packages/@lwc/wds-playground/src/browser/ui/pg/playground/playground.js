@@ -28,6 +28,8 @@ export default class Playground extends LightningElement {
   ssrIsRendered = false;
   csrIsRendered = false;
   cacheBust = false;
+  layoutShiftAttributions = [];
+  layoutShiftObserver;
 
   hasRendered = false;
   renderedCallback() {
@@ -36,6 +38,7 @@ export default class Playground extends LightningElement {
     }
     this.hasRendered = true;
     this.attachListeners();
+    this.createLayoutShiftListener();
   }
 
   attachListeners() {
@@ -44,6 +47,25 @@ export default class Playground extends LightningElement {
     });
     this.template.querySelector('.toggle-csr').addEventListener('sl-change', () => {
       this.csrEnabled = !this.csrEnabled;
+    });
+  }
+
+  createLayoutShiftListener() {
+    this.layoutShiftObserver = new PerformanceObserver((list) => {
+      for (const layoutShiftEntry of list.getEntries()) {
+        const { hadRecentInput, sources } = layoutShiftEntry;
+
+        if (hadRecentInput === false && sources.length > 0) {
+          for (const layoutShiftAttribution of sources) {
+            const { previousRect, currentRect } = layoutShiftAttribution;
+
+            this.layoutShiftAttributions = [
+              ...this.layoutShiftAttributions,
+              [previousRect, currentRect],
+            ];
+          }
+        }
+      }
     });
   }
 
@@ -67,6 +89,15 @@ export default class Playground extends LightningElement {
 
   onConfigChange(evt) {
     this.config = evt.detail;
+
+    if (this.layoutShiftObserver) {
+      if (this.config.observeLayoutShift) {
+        this.layoutShiftObserver.observe({ type: 'layout-shift', buffered: true });
+      } else {
+        // cleanup
+        this.layoutShiftObserver.disconnect();
+      }
+    }
   }
 
   onConfigRenderClicked() {
@@ -107,6 +138,7 @@ export default class Playground extends LightningElement {
     );
 
     if (this.ssrEnabled) {
+      this.layoutShiftAttributions = [];
       await this.renderComponentSSR(componentPropsEvald);
       this.ssrIsRendered = true;
     }
@@ -125,7 +157,8 @@ export default class Playground extends LightningElement {
     const componentParentEl = this.template.querySelector('#ssr-parent');
     componentParentEl.innerHTML = '';
 
-    const { enabledSteps, breakOnMarkup, breakOnInsert, breakOnHydrate } = this.config;
+    const { enabledSteps, breakOnMarkup, breakOnInsert, breakOnHydrate, observeLayoutShift } =
+      this.config;
 
     if (enabledSteps === 0) {
       return;
@@ -151,6 +184,10 @@ export default class Playground extends LightningElement {
 
     if (enabledSteps === 2) {
       return;
+    }
+
+    if (observeLayoutShift) {
+      await new Promise((resolve) => setTimeout(resolve, 550));
     }
 
     if (breakOnHydrate) {
