@@ -9,6 +9,7 @@
     "check": "biome check ./example ./packages",
     "fix": "biome check --apply ./example ./packages",
     "prepare": "husky || true",
+    "//": "This is not yet enabled in CI.",
     "release": "semantic-release",
     "test": "npm run test --workspace example",
     "test:all": "npm run check && npm run test"
