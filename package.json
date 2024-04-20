@@ -9,6 +9,7 @@
     "check": "biome check ./example ./packages",
     "fix": "biome check --apply ./example ./packages",
     "prepare": "husky || true",
+    "release": "semantic-release",
     "test": "npm run test --workspace example",
     "test:all": "npm run check && npm run test"
   },
@@ -25,6 +26,13 @@
     "@biomejs/biome": "1.6.1",
     "@commitlint/cli": "^19.2.2",
     "@commitlint/config-conventional": "^19.2.2",
-    "husky": "^9.0.11"
+    "@semantic-release/npm": "^12.0.0",
+    "husky": "^9.0.11",
+    "semantic-release": "^23.0.8",
+    "semantic-release-monorepo": "^8.0.2"
+  },
+  "release": {
+    "branches": ["main"],
+    "extends": "semantic-release-monorepo"
   }
 }
