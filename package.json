@@ -23,6 +23,8 @@
   ],
   "devDependencies": {
     "@biomejs/biome": "1.6.1",
+    "@commitlint/cli": "^19.2.2",
+    "@commitlint/config-conventional": "^19.2.2",
     "husky": "^9.0.11"
   }
 }
