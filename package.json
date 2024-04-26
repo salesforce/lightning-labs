@@ -31,6 +31,9 @@
     "semantic-release": "^23.0.8",
     "semantic-release-monorepo": "^8.0.2"
   },
+  "optionalDependencies": {
+    "@biomejs/cli-linux-x64": "1.7.1"
+  },
   "release": {
     "branches": [
       "main"
