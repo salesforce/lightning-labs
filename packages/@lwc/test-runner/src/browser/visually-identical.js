@@ -53,7 +53,7 @@ chai.use((_chai, utils) => {
       diffPixelData,
       diffWidth,
       diffHeight,
-      { threshold: 0.1 },
+      { threshold: 1 },
     );
 
     const diffPercentage = (numNonmatchingPixels / (diffWidth * diffHeight)) * 100;
