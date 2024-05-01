@@ -1,7 +1,12 @@
 {
   "name": "@lwc/wds-core",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/salesforce/lightning-labs",
+    "directory": "packages/@lwc/wds-core"
+  },
   "type": "module",
   "main": "index.js",
   "exports": {

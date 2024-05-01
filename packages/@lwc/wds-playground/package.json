@@ -1,7 +1,12 @@
 {
   "name": "@lwc/wds-playground",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/salesforce/lightning-labs",
+    "directory": "packages/@lwc/wds-playground"
+  },
   "type": "module",
   "main": "src/index.js",
   "scripts": {
@@ -10,7 +15,7 @@
   "license": "MIT",
   "dependencies": {
     "@lwc/metadata": "^3.8.0-0",
-    "@lwc/wds-core": "1.0.0",
+    "@lwc/wds-core": "1.0.1",
     "@shoelace-style/shoelace": "^2.9.0",
     "chrome-launcher": "^1.1.0",
     "codejar": "^4.2.0",
