@@ -9,7 +9,8 @@ export function determineTagName(componentUrl, origin = undefined) {
     return 'x-foo';
   }
   const [, namespace, componentName] = match;
-  return `${namespace}-${componentName}`.toLowerCase();
+  const kebabbedComponentName = componentName.replace(/[A-Z]/g, (char) => `-${char.toLowerCase()}`);
+  return `${namespace}-${kebabbedComponentName}`.toLowerCase();
 }
 
 export function getElementName(element) {
