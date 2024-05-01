@@ -9,7 +9,7 @@ import {
 const componentPath = import.meta.resolve('./parent.js');
 
 describe('<x-parent>', () => {
-  it('does a thing', async () => {
+  it('renders to SSR & hydrates successfully', async () => {
     const markup = await renderToMarkup(componentPath, {});
     // Make assertions about raw HTML markup.
     expect(markup).to.contain('</x-parent>');
@@ -25,19 +25,22 @@ describe('<x-parent>', () => {
     expect(querySelectorDeep('p.child-content')).to.have.text('Message: hey howdy!');
   });
 
-  it('throws an error in connected callback', async () => {
+  it('throws an error in connected callback when SSRd', async () => {
     await expect(async () => {
       await renderToMarkup(componentPath, { throwError: true });
     }).to.throwErrorInConnectedCallback('When do I get called?');
   });
 
-  it('SSR correctly', async () => {
+  it('SSRs correctly', async () => {
     const props = {};
+    // This assertion is roughly equivalent to everything seen in the above test:
+    //   it('renders to SSR & hydrates successfully')
     await expect(componentPath, props).to.SSRCorrectly();
   });
 
   it('checks that SSR and CSR are visually the same ', async () => {
     const props = {};
+    // Pixel-by-pixel comparison is done here to ensure visual sameness.
     await expect(componentPath, props).to.be.visuallyIdenticalInCSRandSSR();
   });
 
