@@ -1,0 +1,340 @@
+import { relative as pathRelative, resolve as pathResolve, dirname } from 'node:path';
+import { stringify as qsStringify } from 'node:querystring';
+import resolveSync from 'resolve/sync.js';
+import { toolkitSrcPath } from '../util.js';
+
+const MOCK_IMPORT_PATTERN = /mock(\{ *([a-zA-Z0-9_]+( *, *)?)+\ *}):(.+)/;
+const MOCK_CONTROLLER_PREFIX = '/virtual/mockController:';
+const MOCK_STUB_PREFIX = '/virtual/mockStub:';
+const UNMOCKED_ANNOTATION = 'unmocked';
+const LEXER_ABS_PATH = resolveSync('es-module-lexer/dist/lexer.asm.js', {
+  baseDir: toolkitSrcPath,
+});
+const BROWSER_SSR_ABS_PATH = pathResolve(toolkitSrcPath, './browser/ssr/index.js');
+
+const relFromRoot = (absPath) => (rootDir) => pathRelative(rootDir, absPath);
+const lexerAbsUrl = relFromRoot(LEXER_ABS_PATH);
+const browserSsrUrl = relFromRoot(BROWSER_SSR_ABS_PATH);
+
+function parseExports(curlyWrappedNames) {
+  return curlyWrappedNames
+    .slice(1, -1)
+    .split(',')
+    .map((name) => name.trim());
+}
+
+function makeRecursiveResolve(allPlugins) {
+  const resolvers = allPlugins
+    .filter((plugin) => plugin.name !== 'mock-esm')
+    .map((plugin) => plugin?.resolveImport?.bind?.(plugin))
+    .filter(Boolean);
+
+  return async function resolveImport({ source, context }) {
+    let resolvedImport = pathResolve(dirname(context.request.url), source);
+    let importExists = true;
+
+    try {
+      for (const resolveImport of resolvers) {
+        const resolved = await resolveImport({ source, context });
+        if (resolved) {
+          return {
+            resolvedImport: pathResolve(dirname(context.request.url), resolved?.id ?? resolved),
+            importExists: true,
+          };
+        }
+      }
+    } catch (err) {
+      importExists = false;
+      if (source[0] !== '.' && source[0] !== '.') {
+        resolvedImport = source;
+      }
+    }
+
+    return {
+      resolvedImport,
+      importExists,
+    };
+  };
+}
+
+const withoutDefault = (strings) => strings.filter((el) => el !== 'default');
+const hasDefault = (strings) => strings.includes('default');
+
+const buildMockForResolved = (absPathToUnmockedOriginal, exportedNames, queryString) => `
+import * as __original__ from '${absPathToUnmockedOriginal}${queryString}';
+
+${withoutDefault(exportedNames)
+  .map((name) => `export let ${name} = __original__['${name}'];`)
+  .join('\n')}
+${
+  hasDefault(exportedNames)
+    ? `
+let __liveDefault__ = __original__.default;
+const __hasDefault__ = true;
+export { __liveDefault__ as default };
+`
+    : `
+const __hasDefault__ = false;
+`
+}
+
+export const __mock__ = {
+  __setters__: {
+${withoutDefault(exportedNames)
+  .map((name) => `    ${name}: (val) => { ${name} = val; },`)
+  .join('\n')}
+  },
+  set(key, val) {
+    if (key === 'default') {
+      if (__hasDefault__) {
+        __liveDefault__ = val;
+      }
+    } else {
+      __mock__.__setters__[key](val);
+    }
+  },
+  reset(key) {
+    if (key === 'default') {
+      if (__hasDefault__) {
+        __liveDefault__ = __original__.default;
+      }
+    } else {
+      __mock__.__setters__[key](__original__[key]);
+    }
+  },
+  resetAll() {
+    Object.keys(__mock__.__setters__).forEach(name => {
+      __mock__.reset(name);
+    });
+  },
+  async useImport(importUrl) {
+    const newExports = await import(importUrl);
+    Object.keys(__mock__.__setters__).forEach(name => {
+      __mock__.__setters__[name](newExports[name]);
+    });
+  },
+};
+`;
+
+const buildMockForUnresolved = (exportedNames) => `
+${withoutDefault(exportedNames)
+  .map((name) => `export let ${name} = null;`)
+  .join('\n')}
+${
+  hasDefault(exportedNames)
+    ? `
+let __liveDefault__ = null;
+const __hasDefault__ = true;
+export { __liveDefault__ as default };
+`
+    : `
+const __hasDefault__ = false;
+`
+}
+
+export const __mock__ = {
+  __setters__: {
+${withoutDefault(exportedNames)
+  .map((name) => `  ${name}: (val) => { ${name} = val; },`)
+  .join('\n')}
+  },
+  set(key, val) {
+    if (key === 'default') {
+      if (__hasDefault__) {
+        __liveDefault__ = val;
+      }
+    } else {
+      __mock__.__setters__[key](val);
+    }
+  },
+  reset(key) {
+    if (key === 'default') {
+      if (__hasDefault__) {
+        __liveDefault__ = null;
+      }
+    } else {
+      __mock__.__setters__[key](null);
+    }
+  },
+  resetAll() {
+    Object.keys(__mock__.__setters__).forEach(name => {
+      __mock__.reset(name);
+    });
+  },
+  async useImport(importUrl) {
+    const newExports = await import(importUrl);
+    Object.keys(__mock__.__setters__).forEach(name => {
+      __mock__.__setters__[name](newExports[name]);
+    });
+  },
+};
+`;
+
+const buildMockController = (resolvedOrUnresolvedImport, exportedNames, rootDir, query) => `
+import { parse as parseEsm } from '/${lexerAbsUrl(rootDir)}';
+import { __mock__ } from '${resolvedOrUnresolvedImport}${query}';
+import { mock as mockSSR, resetMock as resetMockSSR } from '/${browserSsrUrl(rootDir)}${query}';
+
+const canonicalExportedNames = new Set([${exportedNames.map((name) => `'${name}'`).join(', ')}]);
+
+function assertHasSameExports(newExportsArr) {
+  if (
+    newExportsArr.length !== canonicalExportedNames.size ||
+    !newExportsArr.every(el => canonicalExportedNames.has(el))
+  ) { 
+    throw new Error('Cannot define mock module with inequivalent exported values.');
+  }
+}
+
+export default async function mockModule(moduleCode) {
+  const [, _exports] = parseEsm(moduleCode);
+  const exportedNames = _exports.map(exp => exp.n);
+  assertHasSameExports(exportedNames);
+
+  const dataUri = 'data:text/javascript,' + encodeURIComponent(moduleCode);
+  await __mock__.useImport(dataUri);
+  await mockSSR('${resolvedOrUnresolvedImport}', dataUri);
+}
+
+mockModule.reset = async () => {
+  __mock__.resetAll();
+  await resetMockSSR('${resolvedOrUnresolvedImport}');
+};
+`;
+
+function getUnmockedUri(absoluteUrl, queryParams) {
+  const newParams = {
+    ...queryParams,
+    [UNMOCKED_ANNOTATION]: '1',
+  };
+  return `${absoluteUrl}?${qsStringify(newParams)}`;
+}
+
+export default ({ rootDir }) => {
+  const mockedModules = new Map();
+
+  let recursiveResolve;
+
+  const resolveMockImport = async ({ source, context }) => {
+    const match = MOCK_IMPORT_PATTERN.exec(source);
+    if (!match) {
+      return;
+    }
+    const [, curlyWrappedNames, , , verbatimImport] = match;
+    const exportedNames = parseExports(curlyWrappedNames);
+
+    // perhaps we will need to synchronously set something
+    // in mockedModules, in case the test file immediately
+    // imports the nonexisted mocked file right after the
+    // mock: import, in the same file. I don't think web test
+    // runner will wait for the previous import to resolve
+    // before taking a look at the next one
+
+    const { resolvedImport, importExists } = await recursiveResolve({
+      source: verbatimImport,
+      context,
+    });
+
+    const mockControllerPath = `${MOCK_CONTROLLER_PREFIX}${resolvedImport}`;
+    mockedModules.set(resolvedImport, {
+      mockControllerPath,
+      exportedNames,
+      importExists,
+    });
+
+    return mockControllerPath;
+  };
+
+  const resolveNonexistentMockedModule = async ({ source, context }) => {
+    if (!mockedModules.has(source)) {
+      return;
+    }
+    const { importExists } = mockedModules.get(source);
+    if (importExists) {
+      return;
+    }
+
+    return `${MOCK_STUB_PREFIX}${source}`;
+  };
+
+  const serveMockController = (pathname, queryParams) => {
+    if (!pathname.startsWith(MOCK_CONTROLLER_PREFIX)) {
+      return;
+    }
+
+    const resolvedOrRelativeImport = pathname.substring(MOCK_CONTROLLER_PREFIX.length);
+    const mockedModuleEntry = mockedModules.get(resolvedOrRelativeImport);
+    if (!mockedModuleEntry) {
+      throw new Error(`Unable to find mock entry for "${resolvedOrRelativeImport}"`);
+    }
+    const { exportedNames, importExists } = mockedModuleEntry;
+
+    const queryString = Object.keys(queryParams).length ? `?${qsStringify(queryParams)}` : '';
+
+    return buildMockController(
+      importExists ? resolvedOrRelativeImport : `${MOCK_STUB_PREFIX}${resolvedOrRelativeImport}`,
+      exportedNames,
+      rootDir,
+      queryString,
+    );
+  };
+
+  const serveMockStub = (pathname) => {
+    const isMock = pathname.startsWith(MOCK_STUB_PREFIX);
+    if (!isMock) {
+      return;
+    }
+    const mockPath = pathname.slice(MOCK_STUB_PREFIX.length);
+    if (!mockedModules.has(mockPath)) {
+      throw new Error(`Implementation error: cannot find mock entry for ${pathname}`);
+    }
+
+    const { exportedNames } = mockedModules.get(mockPath);
+
+    return buildMockForUnresolved(exportedNames);
+  };
+
+  const serveMockedModule = (pathname, queryParams) => {
+    if (!mockedModules.has(pathname)) {
+      return;
+    }
+    // If the URL is annotated with `unmocked=1`, this passes through to the original
+    // source code. This allows the mocked version to access the stub or the actual,
+    // unmocked exports.
+    if (queryParams[UNMOCKED_ANNOTATION]) {
+      return;
+    }
+    const { exportedNames } = mockedModules.get(pathname);
+
+    const queryString = Object.keys(queryParams).length ? `?${qsStringify(queryParams)}` : '';
+
+    return buildMockForResolved(getUnmockedUri(pathname, queryParams), exportedNames, queryString);
+  };
+
+  return {
+    name: 'mock-esm',
+
+    serverStart({ config }) {
+      if (!config.plugins) {
+        throw new Error(
+          'Implementation error: expected plugins to be passed to mock-esm serverStart',
+        );
+      }
+      recursiveResolve = makeRecursiveResolve(config.plugins);
+    },
+
+    async serve(context) {
+      const { path, query } = context;
+      const body =
+        serveMockController(path, query) ?? serveMockedModule(path, query) ?? serveMockStub(path);
+      return body ? { body, type: 'text/javascript' } : undefined;
+    },
+
+    async resolveImport({ source, context }) {
+      return (
+        (await resolveMockImport({ source, context })) ??
+        (await resolveNonexistentMockedModule({ source, context }))
+      );
+    },
+  };
+};

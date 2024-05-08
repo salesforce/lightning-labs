@@ -47,6 +47,11 @@ function isComponentHtmlOrCss(filePath, componentDirname) {
   );
 }
 
+function stripQueryString(filePath) {
+  const qidx = filePath.indexOf('?');
+  return qidx === -1 ? filePath : filePath.slice(0, qidx);
+}
+
 export default ({ rootDir, moduleDirs }) => ({
   name: 'lwc-compile',
 
@@ -70,7 +75,7 @@ export default ({ rootDir, moduleDirs }) => ({
   },
 
   transform(context) {
-    const filePath = getRequestFilePath(context.url, rootDir);
+    const filePath = stripQueryString(getRequestFilePath(context.url, rootDir));
 
     const componentDirname = path.dirname(filePath);
     const moduleResolution = resolvedModules.get(filePath);
@@ -84,7 +89,7 @@ export default ({ rootDir, moduleDirs }) => ({
 
     componentDirs.add(componentDirname);
 
-    const filename = path.basename(moduleResolution?.resolvedImport ?? filePath);
+    const filename = stripQueryString(path.basename(moduleResolution?.resolvedImport ?? filePath));
     const [namespace, name] = componentDirname.split(path.sep).slice(-2);
 
     const transformOptions = {

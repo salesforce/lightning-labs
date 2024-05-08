@@ -59,3 +59,15 @@ export async function render(componentUrl, componentProps) {
   url.searchParams.set('env', 'ssr');
   return await task('render', url.href, componentProps);
 }
+
+export async function mock(mockedModuleUrl, replacementUrl) {
+  const url = new URL(mockedModuleUrl, document.location.origin);
+  url.searchParams.set('env', 'ssr');
+  return await task('mock', url.href, replacementUrl);
+}
+
+export async function resetMock(mockedModuleUrl) {
+  const url = new URL(mockedModuleUrl, document.location.origin);
+  url.searchParams.set('env', 'ssr');
+  return await task('resetMock', url.href);
+}

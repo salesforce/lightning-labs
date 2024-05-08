@@ -16,6 +16,10 @@ onmessage = async (message) => {
   let handler;
   if (kind === 'render') {
     handler = render;
+  } else if (kind === 'mock') {
+    handler = mock;
+  } else if (kind === 'resetMock') {
+    handler = resetMock;
   } else {
     return postMessage([taskId, false, new Error(`Unknown worker task of kind: ${kind}`)]);
   }
@@ -30,4 +34,20 @@ onmessage = async (message) => {
 async function render(componentUrl, componentProps) {
   const { default: Cmp } = await import(componentUrl);
   return renderComponent(determineTagName(componentUrl), Cmp, componentProps);
+}
+
+async function mock(mockedModuleUrl, replacementUrl) {
+  const { __mock__ } = await import(mockedModuleUrl);
+  if (!__mock__) {
+    throw new Error(`Specified module cannot be mocked: ${mockedModuleUrl}`);
+  }
+  await __mock__.useImport(replacementUrl);
+}
+
+async function resetMock(mockedModuleUrl) {
+  const { __mock__ } = await import(mockedModuleUrl);
+  if (!__mock__) {
+    throw new Error(`Specified module cannot be mocked: ${mockedModuleUrl}`);
+  }
+  await __mock__.resetAll();
 }

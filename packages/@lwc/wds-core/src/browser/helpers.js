@@ -3,6 +3,19 @@ import { createElement, hasMismatch, hydrateComponent } from '@lwc/engine-dom';
 import { determineTagName } from './shared.js';
 import * as ssr from './ssr/index.js';
 
+const thisUrl = new URL(import.meta.url);
+
+function getQueryString(paramsObj) {
+  const queryParams = new URLSearchParams(thisUrl.searchParams);
+  if (paramsObj && Object.keys(paramsObj).length > 0) {
+    for (const [key, val] of Object.entries(paramsObj)) {
+      queryParams.set(key, val);
+    }
+  }
+  const queryString = queryParams.toString();
+  return queryString.length ? `?${queryString}` : '';
+}
+
 export async function renderToMarkup(componentPath, props = {}) {
   return await ssr.render(componentPath, props);
 }
@@ -25,8 +38,8 @@ export async function insertMarkupIntoDom(markup, parentEl = document.querySelec
 
 export async function hydrateElement(el, componentPath, props = {}, cacheBust = false) {
   const cacheBustedComponentPath = cacheBust
-    ? `${componentPath}?cacheBust=${Date.now()}`
-    : componentPath;
+    ? `${componentPath}${getQueryString({ cacheBust: Date.now() })}`
+    : `${componentPath}${getQueryString()}`;
   const { default: Ctor } = await import(cacheBustedComponentPath);
 
   hydrateComponent(el, Ctor, props);
@@ -36,8 +49,8 @@ export async function hydrateElement(el, componentPath, props = {}, cacheBust = 
 
 export async function clientSideRender(parentEl, componentPath, props = {}, cacheBust = false) {
   const cacheBustedComponentPath = cacheBust
-    ? `${componentPath}?cacheBust=${Date.now()}`
-    : componentPath;
+    ? `${componentPath}${getQueryString({ cacheBust: Date.now() })}`
+    : `${componentPath}${getQueryString()}`;
 
   const { default: Ctor } = await import(cacheBustedComponentPath);
   const elm = createElement(determineTagName(cacheBustedComponentPath, document.location.origin), {
