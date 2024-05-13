@@ -7,6 +7,8 @@ import { getRequestFilePath } from '@web/dev-server-core';
 import { resolvedModules } from './resolve-module.js';
 
 const COMPONENT_JS_PATTERN = /\/\w+\/(\w+)\/\1\.[jt]s$/;
+const COMPONENT_CSS_PATTERN = /\/\w+\/(\w+)\/\1\.css$/;
+const COMPONENT_HTML_PATTERN = /\/\w+\/(\w+)\/\1\.html$/;
 export const VIRTUAL_CSS_EMPTY = '/virtual/empty.css';
 export const VIRTUAL_TEMPLATE_EMPTY = '/virtual/empty.html';
 
@@ -42,9 +44,24 @@ function isComponentJavascript(filePath, moduleDirs) {
 }
 
 function isComponentHtmlOrCss(filePath, componentDirname) {
-  return (
-    componentDirs.has(componentDirname) && (filePath.endsWith('.css') || filePath.endsWith('.html'))
-  );
+  // If a component has multiple templates, the filepath won't follow the typical naming
+  // convention for LWCs. Detecting an HTML or CSS file within a known LWC component
+  // directory is a strong enough proxy for "this is LWC CSS" or "this is an LWC template".
+  if (
+    componentDirs.has(componentDirname) &&
+    (filePath.endsWith('.css') || filePath.endsWith('.html'))
+  ) {
+    return true;
+  }
+  // On the other hand, sometimes HTML and CSS is sometimes pulled in in unexpected ways.
+  // If it matches the expected pattern, an HTML file should be treated as LWC template.
+  if (filePath.endsWith('.html') && COMPONENT_HTML_PATTERN.test(filePath)) {
+    return true;
+  }
+  if (filePath.endsWith('.css') && COMPONENT_CSS_PATTERN.test(filePath)) {
+    return true;
+  }
+  return false;
 }
 
 function stripQueryString(filePath) {
