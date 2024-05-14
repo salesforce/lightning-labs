@@ -1,6 +1,8 @@
 import { relative as pathRelative, resolve as pathResolve } from 'node:path';
+import { stringify as qsStringify } from 'node:querystring';
 import resolveSync from 'resolve/sync.js';
 import { toolkitSrcPath } from '../../util.js';
+import { MOCK_CONTROLLER_PREFIX, MOCK_STUB_PREFIX } from './const.js';
 
 const LEXER_ABS_PATH = resolveSync('es-module-lexer/dist/lexer.asm.js', {
   baseDir: toolkitSrcPath,
@@ -11,7 +13,7 @@ const relFromRoot = (absPath) => (rootDir) => pathRelative(rootDir, absPath);
 const lexerAbsUrl = relFromRoot(LEXER_ABS_PATH);
 const browserSsrUrl = relFromRoot(BROWSER_SSR_ABS_PATH);
 
-export const buildMockController = (resolvedOrUnresolvedImport, exportedNames, rootDir, query) => `
+const buildMockController = (resolvedOrUnresolvedImport, exportedNames, rootDir, query) => `
 import { parse as parseEsm } from '/${lexerAbsUrl(rootDir)}';
 import { __mock__ } from '${resolvedOrUnresolvedImport}${query}';
 import { mock as mockSSR, resetMock as resetMockSSR } from '/${browserSsrUrl(rootDir)}${query}';
@@ -42,3 +44,25 @@ mockModule.reset = async () => {
   await resetMockSSR('${resolvedOrUnresolvedImport}');
 };
 `;
+
+export const makeServeMockController = (mockedModules, rootDir) => (pathname, queryParams) => {
+  if (!pathname.startsWith(MOCK_CONTROLLER_PREFIX)) {
+    return;
+  }
+
+  const resolvedOrRelativeImport = pathname.substring(MOCK_CONTROLLER_PREFIX.length);
+  const mockedModuleEntry = mockedModules.get(resolvedOrRelativeImport);
+  if (!mockedModuleEntry) {
+    throw new Error(`Unable to find mock entry for "${resolvedOrRelativeImport}"`);
+  }
+  const { exportedNames, importExists } = mockedModuleEntry;
+
+  const queryString = Object.keys(queryParams).length ? `?${qsStringify(queryParams)}` : '';
+
+  return buildMockController(
+    importExists ? resolvedOrRelativeImport : `${MOCK_STUB_PREFIX}${resolvedOrRelativeImport}`,
+    exportedNames,
+    rootDir,
+    queryString,
+  );
+};

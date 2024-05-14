@@ -1,10 +1,9 @@
 import { resolve as pathResolve, dirname } from 'node:path';
 import { stringify as qsStringify } from 'node:querystring';
-import { buildMockController } from './mock-controller.js';
+import { makeServeMockController } from './mock-controller.js';
+import { MOCK_CONTROLLER_PREFIX, MOCK_STUB_PREFIX } from './const.js';
 
 const MOCK_IMPORT_PATTERN = /mock(\{ *([a-zA-Z0-9_]+( *, *)?)+\ *}):(.+)/;
-const MOCK_CONTROLLER_PREFIX = '/virtual/mockController:';
-const MOCK_STUB_PREFIX = '/virtual/mockStub:';
 const UNMOCKED_ANNOTATION = 'unmocked';
 
 function parseExports(curlyWrappedNames) {
@@ -216,27 +215,7 @@ export default ({ rootDir }) => {
     return `${MOCK_STUB_PREFIX}${source}`;
   };
 
-  const serveMockController = (pathname, queryParams) => {
-    if (!pathname.startsWith(MOCK_CONTROLLER_PREFIX)) {
-      return;
-    }
-
-    const resolvedOrRelativeImport = pathname.substring(MOCK_CONTROLLER_PREFIX.length);
-    const mockedModuleEntry = mockedModules.get(resolvedOrRelativeImport);
-    if (!mockedModuleEntry) {
-      throw new Error(`Unable to find mock entry for "${resolvedOrRelativeImport}"`);
-    }
-    const { exportedNames, importExists } = mockedModuleEntry;
-
-    const queryString = Object.keys(queryParams).length ? `?${qsStringify(queryParams)}` : '';
-
-    return buildMockController(
-      importExists ? resolvedOrRelativeImport : `${MOCK_STUB_PREFIX}${resolvedOrRelativeImport}`,
-      exportedNames,
-      rootDir,
-      queryString,
-    );
-  };
+  const serveMockController = makeServeMockController(mockedModules, rootDir);
 
   const serveMockStub = (pathname) => {
     const isMock = pathname.startsWith(MOCK_STUB_PREFIX);
