@@ -127,7 +127,7 @@ export default ({ rootDir, moduleDirs }) => ({
     const { code, warnings: diagnostics } = transformSync(context.body, filename, transformOptions);
 
     if (diagnostics?.length) {
-      throw new Error(`Sure did not work! ${JSON.stringify(diagnostics, null, 2)}`);
+      console.error(`LWC compiled with warnings: ${JSON.stringify(diagnostics, null, 2)}`);
     }
 
     compiledFiles.add(context.url);
