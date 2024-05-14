@@ -2,17 +2,8 @@ import { resolve as pathResolve, dirname } from 'node:path';
 import { makeMockControllerHandler } from './controller.js';
 import { makeMockedModuleHandler } from './mock-resolved.js';
 import { makeMockStubHandler } from './mock-stub.js';
+import { makeMockImportResolver } from './resolve/mock-import.js';
 import { makeNonexistentMockedModuleResolver } from './resolve/nonexistent-mocked-module.js';
-import { MOCK_CONTROLLER_PREFIX } from './const.js';
-
-const MOCK_IMPORT_PATTERN = /mock(\{ *([a-zA-Z0-9_]+( *, *)?)+\ *}):(.+)/;
-
-function parseExports(curlyWrappedNames) {
-  return curlyWrappedNames
-    .slice(1, -1)
-    .split(',')
-    .map((name) => name.trim());
-}
 
 function makeRecursiveResolve(allPlugins) {
   const resolvers = allPlugins
@@ -51,38 +42,7 @@ function makeRecursiveResolve(allPlugins) {
 export default ({ rootDir }) => {
   const mockedModules = new Map();
 
-  let recursiveResolve;
-
-  const resolveMockImport = async ({ source, context }) => {
-    const match = MOCK_IMPORT_PATTERN.exec(source);
-    if (!match) {
-      return;
-    }
-    const [, curlyWrappedNames, , , verbatimImport] = match;
-    const exportedNames = parseExports(curlyWrappedNames);
-
-    // perhaps we will need to synchronously set something
-    // in mockedModules, in case the test file immediately
-    // imports the nonexisted mocked file right after the
-    // mock: import, in the same file. I don't think web test
-    // runner will wait for the previous import to resolve
-    // before taking a look at the next one
-
-    const { resolvedImport, importExists } = await recursiveResolve({
-      source: verbatimImport,
-      context,
-    });
-
-    const mockControllerPath = `${MOCK_CONTROLLER_PREFIX}${resolvedImport}`;
-    mockedModules.set(resolvedImport, {
-      mockControllerPath,
-      exportedNames,
-      importExists,
-    });
-
-    return mockControllerPath;
-  };
-
+  let resolveMockImport;
   const resolveNonexistentMockedModule = makeNonexistentMockedModuleResolver({ mockedModules });
   const serveMockController = makeMockControllerHandler({ mockedModules, rootDir });
   const serveMockStub = makeMockStubHandler({ mockedModules });
@@ -97,7 +57,8 @@ export default ({ rootDir }) => {
           'Implementation error: expected plugins to be passed to mock-esm serverStart',
         );
       }
-      recursiveResolve = makeRecursiveResolve(config.plugins);
+      const recursiveResolve = makeRecursiveResolve(config.plugins);
+      resolveMockImport = makeMockImportResolver({ mockedModules, recursiveResolve });
     },
 
     async serve(context) {
