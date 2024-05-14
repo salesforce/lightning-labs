@@ -44,8 +44,15 @@ function isComponentJavascript(filePath, moduleDirs) {
   return isWithinModuleDir(moduleDirs, filePath) && matchesComponentJsPattern;
 }
 
-function isGeneratedMockModule(content) {
-  return content.includes(GENERATED_MODULE_COMMENT);
+function isGeneratedMockModule(code) {
+  return code.includes(GENERATED_MODULE_COMMENT);
+}
+
+function looksLikeComponent(code) {
+  return (
+    code.includes('extends LightningElement') ||
+    /export default class [a-zA-Z0-9_]+ extends/.test(code)
+  );
 }
 
 function isComponentHtmlOrCss(filePath, componentDirname) {
@@ -102,10 +109,14 @@ export default ({ rootDir, moduleDirs }) => ({
     const componentDirname = path.dirname(filePath);
     const moduleResolution = resolvedModules.get(filePath);
 
+    const isCmpJs = isComponentJavascript(filePath, moduleDirs);
+    const isCmpHtmlOrCss = isComponentHtmlOrCss(filePath, componentDirname);
+    const looksLikeCmp = looksLikeComponent(context.body);
+
     if (
-      (!isComponentJavascript(filePath, moduleDirs) &&
-        !isComponentHtmlOrCss(filePath, componentDirname)) ||
-      isGeneratedMockModule(context.body)
+      isGeneratedMockModule(context.body) ||
+      (!isCmpJs && !isCmpHtmlOrCss) ||
+      (isCmpJs && !looksLikeCmp)
     ) {
       return context.body;
     }

@@ -25,7 +25,11 @@ function assertHasSameExports(newExportsArr) {
     newExportsArr.length !== canonicalExportedNames.size ||
     !newExportsArr.every(el => canonicalExportedNames.has(el))
   ) { 
-    throw new Error('Cannot define mock module with inequivalent exported values.');
+    throw new Error(
+      'Cannot define mock module ("${resolvedOrUnresolvedImport}") with inequivalent exported values.\\n' +
+      'Canonical exports: ' + [...canonicalExportedNames].join(',') + '\\n' +
+      'Provided exports: ' + newExportsArr.join(',') + '\\n'
+    );
   }
 }
 
