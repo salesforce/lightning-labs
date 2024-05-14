@@ -45,24 +45,26 @@ mockModule.reset = async () => {
 };
 `;
 
-export const makeServeMockController = (mockedModules, rootDir) => (pathname, queryParams) => {
-  if (!pathname.startsWith(MOCK_CONTROLLER_PREFIX)) {
-    return;
-  }
+export const makeMockControllerHandler =
+  ({ mockedModules, rootDir }) =>
+  (pathname, queryParams) => {
+    if (!pathname.startsWith(MOCK_CONTROLLER_PREFIX)) {
+      return;
+    }
 
-  const resolvedOrRelativeImport = pathname.substring(MOCK_CONTROLLER_PREFIX.length);
-  const mockedModuleEntry = mockedModules.get(resolvedOrRelativeImport);
-  if (!mockedModuleEntry) {
-    throw new Error(`Unable to find mock entry for "${resolvedOrRelativeImport}"`);
-  }
-  const { exportedNames, importExists } = mockedModuleEntry;
+    const resolvedOrRelativeImport = pathname.substring(MOCK_CONTROLLER_PREFIX.length);
+    const mockedModuleEntry = mockedModules.get(resolvedOrRelativeImport);
+    if (!mockedModuleEntry) {
+      throw new Error(`Unable to find mock entry for "${resolvedOrRelativeImport}"`);
+    }
+    const { exportedNames, importExists } = mockedModuleEntry;
 
-  const queryString = Object.keys(queryParams).length ? `?${qsStringify(queryParams)}` : '';
+    const queryString = Object.keys(queryParams).length ? `?${qsStringify(queryParams)}` : '';
 
-  return buildMockController(
-    importExists ? resolvedOrRelativeImport : `${MOCK_STUB_PREFIX}${resolvedOrRelativeImport}`,
-    exportedNames,
-    rootDir,
-    queryString,
-  );
-};
+    return buildMockController(
+      importExists ? resolvedOrRelativeImport : `${MOCK_STUB_PREFIX}${resolvedOrRelativeImport}`,
+      exportedNames,
+      rootDir,
+      queryString,
+    );
+  };

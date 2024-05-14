@@ -1,7 +1,9 @@
 import { resolve as pathResolve, dirname } from 'node:path';
 import { stringify as qsStringify } from 'node:querystring';
-import { makeServeMockController } from './controller.js';
+import { makeMockControllerHandler } from './controller.js';
+import { makeMockStubHandler } from './mock-stub.js';
 import { MOCK_CONTROLLER_PREFIX, MOCK_STUB_PREFIX } from './const.js';
+import { hasDefault, withoutDefault } from './util.js';
 
 const MOCK_IMPORT_PATTERN = /mock(\{ *([a-zA-Z0-9_]+( *, *)?)+\ *}):(.+)/;
 const UNMOCKED_ANNOTATION = 'unmocked';
@@ -47,9 +49,6 @@ function makeRecursiveResolve(allPlugins) {
   };
 }
 
-const withoutDefault = (strings) => strings.filter((el) => el !== 'default');
-const hasDefault = (strings) => strings.includes('default');
-
 const buildMockForResolved = (absPathToUnmockedOriginal, exportedNames, queryString) => `
 import * as __original__ from '${absPathToUnmockedOriginal}${queryString}';
 
@@ -90,60 +89,6 @@ ${withoutDefault(exportedNames)
       }
     } else {
       __mock__.__setters__[key](__original__[key]);
-    }
-  },
-  resetAll() {
-    Object.keys(__mock__.__setters__).forEach(name => {
-      __mock__.reset(name);
-    });
-  },
-  async useImport(importUrl) {
-    const newExports = await import(importUrl);
-    Object.keys(__mock__.__setters__).forEach(name => {
-      __mock__.__setters__[name](newExports[name]);
-    });
-  },
-};
-`;
-
-const buildMockForUnresolved = (exportedNames) => `
-${withoutDefault(exportedNames)
-  .map((name) => `export let ${name} = null;`)
-  .join('\n')}
-${
-  hasDefault(exportedNames)
-    ? `
-let __liveDefault__ = null;
-const __hasDefault__ = true;
-export { __liveDefault__ as default };
-`
-    : `
-const __hasDefault__ = false;
-`
-}
-
-export const __mock__ = {
-  __setters__: {
-${withoutDefault(exportedNames)
-  .map((name) => `  ${name}: (val) => { ${name} = val; },`)
-  .join('\n')}
-  },
-  set(key, val) {
-    if (key === 'default') {
-      if (__hasDefault__) {
-        __liveDefault__ = val;
-      }
-    } else {
-      __mock__.__setters__[key](val);
-    }
-  },
-  reset(key) {
-    if (key === 'default') {
-      if (__hasDefault__) {
-        __liveDefault__ = null;
-      }
-    } else {
-      __mock__.__setters__[key](null);
     }
   },
   resetAll() {
@@ -215,22 +160,8 @@ export default ({ rootDir }) => {
     return `${MOCK_STUB_PREFIX}${source}`;
   };
 
-  const serveMockController = makeServeMockController(mockedModules, rootDir);
-
-  const serveMockStub = (pathname) => {
-    const isMock = pathname.startsWith(MOCK_STUB_PREFIX);
-    if (!isMock) {
-      return;
-    }
-    const mockPath = pathname.slice(MOCK_STUB_PREFIX.length);
-    if (!mockedModules.has(mockPath)) {
-      throw new Error(`Implementation error: cannot find mock entry for ${pathname}`);
-    }
-
-    const { exportedNames } = mockedModules.get(mockPath);
-
-    return buildMockForUnresolved(exportedNames);
-  };
+  const serveMockController = makeMockControllerHandler({ mockedModules, rootDir });
+  const serveMockStub = makeMockStubHandler({ mockedModules });
 
   const serveMockedModule = (pathname, queryParams) => {
     if (!mockedModules.has(pathname)) {
