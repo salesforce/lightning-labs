@@ -1,9 +1,8 @@
-import { stringify as qsStringify } from 'node:querystring';
 import { getUnmockedUri, hasDefault, withoutDefault } from '../util.js';
 import { UNMOCKED_ANNOTATION } from '../const.js';
 
-const buildMockForResolved = (absPathToUnmockedOriginal, exportedNames, queryString) => `
-import * as __original__ from '${absPathToUnmockedOriginal}${queryString}';
+const buildMockForResolved = (absPathToUnmockedOriginal, exportedNames) => `
+import * as __original__ from '${absPathToUnmockedOriginal}';
 
 ${withoutDefault(exportedNames)
   .map((name) => `export let ${name} = __original__['${name}'];`)
@@ -72,7 +71,5 @@ export const makeMockedModuleHandler =
     }
     const { exportedNames } = mockedModules.get(pathname);
 
-    const queryString = Object.keys(queryParams).length ? `?${qsStringify(queryParams)}` : '';
-
-    return buildMockForResolved(getUnmockedUri(pathname, queryParams), exportedNames, queryString);
+    return buildMockForResolved(getUnmockedUri(pathname, queryParams), exportedNames);
   };
