@@ -2,7 +2,8 @@ import { resolve as pathResolve, dirname } from 'node:path';
 import { makeMockControllerHandler } from './controller.js';
 import { makeMockedModuleHandler } from './mock-resolved.js';
 import { makeMockStubHandler } from './mock-stub.js';
-import { MOCK_CONTROLLER_PREFIX, MOCK_STUB_PREFIX } from './const.js';
+import { makeNonexistentMockedModuleResolver } from './resolve/nonexistent-mocked-module.js';
+import { MOCK_CONTROLLER_PREFIX } from './const.js';
 
 const MOCK_IMPORT_PATTERN = /mock(\{ *([a-zA-Z0-9_]+( *, *)?)+\ *}):(.+)/;
 
@@ -82,18 +83,7 @@ export default ({ rootDir }) => {
     return mockControllerPath;
   };
 
-  const resolveNonexistentMockedModule = async ({ source, context }) => {
-    if (!mockedModules.has(source)) {
-      return;
-    }
-    const { importExists } = mockedModules.get(source);
-    if (importExists) {
-      return;
-    }
-
-    return `${MOCK_STUB_PREFIX}${source}`;
-  };
-
+  const resolveNonexistentMockedModule = makeNonexistentMockedModuleResolver({ mockedModules });
   const serveMockController = makeMockControllerHandler({ mockedModules, rootDir });
   const serveMockStub = makeMockStubHandler({ mockedModules });
   const serveMockedModule = makeMockedModuleHandler({ mockedModules });
