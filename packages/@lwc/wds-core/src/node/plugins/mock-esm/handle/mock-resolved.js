@@ -1,3 +1,4 @@
+import { stringify as qsStringify } from 'node:querystring';
 import { getUnmockedUri, hasDefault, withoutDefault } from '../util.js';
 import { UNMOCKED_ANNOTATION } from '../const.js';
 

@@ -1,4 +1,5 @@
 import { MOCK_CONTROLLER_PREFIX } from '../const.js';
+import { withoutQs } from '../util.js';
 
 const MOCK_IMPORT_PATTERN = /mock(\{ *([a-zA-Z0-9_]+( *, *)?)+\ *}):(.+)/;
 
@@ -32,7 +33,8 @@ export const makeMockImportResolver =
     });
 
     const mockControllerPath = `${MOCK_CONTROLLER_PREFIX}${resolvedImport}`;
-    mockedModules.set(resolvedImport, {
+    const moduleKey = withoutQs(resolvedImport);
+    mockedModules.set(moduleKey, {
       mockControllerPath,
       exportedNames,
       importExists,
