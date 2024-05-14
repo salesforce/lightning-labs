@@ -1,7 +1,7 @@
 import { relative as pathRelative, resolve as pathResolve, dirname } from 'node:path';
 import { stringify as qsStringify } from 'node:querystring';
 import resolveSync from 'resolve/sync.js';
-import { toolkitSrcPath } from '../util.js';
+import { toolkitSrcPath } from '../../util.js';
 
 const MOCK_IMPORT_PATTERN = /mock(\{ *([a-zA-Z0-9_]+( *, *)?)+\ *}):(.+)/;
 const MOCK_CONTROLLER_PREFIX = '/virtual/mockController:';
