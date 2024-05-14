@@ -5,6 +5,7 @@ import { transformSync } from '@lwc/compiler';
 import { getRequestFilePath } from '@web/dev-server-core';
 
 import { resolvedModules } from './resolve-module.js';
+import { GENERATED_MODULE_COMMENT } from '../mock-esm/const.js';
 
 const COMPONENT_JS_PATTERN = /\/\w+\/(\w+)\/\1\.[jt]s$/;
 const COMPONENT_CSS_PATTERN = /\/\w+\/(\w+)\/\1\.css$/;
@@ -41,6 +42,10 @@ function isWithinModuleDir(moduleDirs, filePath) {
 function isComponentJavascript(filePath, moduleDirs) {
   const matchesComponentJsPattern = COMPONENT_JS_PATTERN.test(filePath);
   return isWithinModuleDir(moduleDirs, filePath) && matchesComponentJsPattern;
+}
+
+function isGeneratedMockModule(content) {
+  return content.includes(GENERATED_MODULE_COMMENT);
 }
 
 function isComponentHtmlOrCss(filePath, componentDirname) {
@@ -98,8 +103,9 @@ export default ({ rootDir, moduleDirs }) => ({
     const moduleResolution = resolvedModules.get(filePath);
 
     if (
-      !isComponentJavascript(filePath, moduleDirs) &&
-      !isComponentHtmlOrCss(filePath, componentDirname)
+      (!isComponentJavascript(filePath, moduleDirs) &&
+        !isComponentHtmlOrCss(filePath, componentDirname)) ||
+      isGeneratedMockModule(context.body)
     ) {
       return context.body;
     }

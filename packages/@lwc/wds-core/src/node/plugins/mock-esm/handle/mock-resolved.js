@@ -1,8 +1,10 @@
 import { getUnmockedUri, hasDefault, withoutDefault } from '../util.js';
-import { UNMOCKED_ANNOTATION } from '../const.js';
+import { GENERATED_MODULE_COMMENT, UNMOCKED_ANNOTATION } from '../const.js';
 
 const buildMockForResolved = (absPathToUnmockedOriginal, exportedNames) => `
 import * as __original__ from '${absPathToUnmockedOriginal}';
+
+${GENERATED_MODULE_COMMENT}
 
 ${withoutDefault(exportedNames)
   .map((name) => `export let ${name} = __original__['${name}'];`)
