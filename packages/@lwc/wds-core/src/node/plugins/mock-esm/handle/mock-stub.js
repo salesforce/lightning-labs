@@ -1,7 +1,7 @@
 import { GENERATED_MODULE_COMMENT, MOCK_STUB_PREFIX } from '../const.js';
 import { hasDefault, withoutDefault } from '../util.js';
 
-const buildMockForUnresolved = (exportedNames) => `
+export const buildMockForUnresolved = (exportedNames) => `
 ${GENERATED_MODULE_COMMENT}
 
 ${withoutDefault(exportedNames)

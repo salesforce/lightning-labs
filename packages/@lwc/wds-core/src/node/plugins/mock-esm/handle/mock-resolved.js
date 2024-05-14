@@ -1,3 +1,4 @@
+import { buildMockForUnresolved } from './mock-stub.js';
 import { getUnmockedUri, hasDefault, withoutDefault } from '../util.js';
 import { GENERATED_MODULE_COMMENT, UNMOCKED_ANNOTATION } from '../const.js';
 
@@ -71,7 +72,16 @@ export const makeMockedModuleHandler =
     if (queryParams[UNMOCKED_ANNOTATION]) {
       return;
     }
-    const { exportedNames } = mockedModules.get(pathname);
+    const { exportedNames, importExists } = mockedModules.get(pathname);
 
-    return buildMockForResolved(getUnmockedUri(pathname, queryParams), exportedNames);
+    // If the `mock!` syntax is used, this handler will be active for the resolved
+    // path. However, the developer has indicated in their import statement that
+    // they do not want to use the exports from the real, unmocked module as the
+    // mocks initial exports.
+    //
+    // If this is the case, the mock should be treated as a "stub", similar to if
+    // the originally imported module could not be found.
+    return importExists
+      ? buildMockForResolved(getUnmockedUri(pathname, queryParams), exportedNames)
+      : buildMockForUnresolved(exportedNames);
   };

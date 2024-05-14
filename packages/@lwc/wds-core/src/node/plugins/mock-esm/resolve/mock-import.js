@@ -1,7 +1,7 @@
 import { MOCK_CONTROLLER_PREFIX } from '../const.js';
 import { withoutQs } from '../util.js';
 
-const MOCK_IMPORT_PATTERN = /mock(\{ *([a-zA-Z0-9_]+( *, *)?)+\ *}):(.+)/;
+const MOCK_IMPORT_PATTERN = /mock(!?)(\{ *([a-zA-Z0-9_]+( *, *)?)+\ *}):(.+)/;
 
 function parseExports(curlyWrappedNames) {
   return curlyWrappedNames
@@ -17,8 +17,14 @@ export const makeMockImportResolver =
     if (!match) {
       return;
     }
-    const [, curlyWrappedNames, , , verbatimImport] = match;
+    const [, exclamation, curlyWrappedNames, , , verbatimImport] = match;
     const exportedNames = parseExports(curlyWrappedNames);
+
+    // Even if the mocked module can be resolved on disk, the developer
+    // may not wish that module to provide the default values of the mock.
+    // In that case, the developer can use the `mock!{default}:./filepath`
+    // syntax to force the mock plugin to treat it as a stub.
+    const forceMock = !!exclamation;
 
     // perhaps we will need to synchronously set something
     // in mockedModules, in case the test file immediately
@@ -37,7 +43,7 @@ export const makeMockImportResolver =
     mockedModules.set(moduleKey, {
       mockControllerPath,
       exportedNames,
-      importExists,
+      importExists: !forceMock && importExists,
     });
 
     return mockControllerPath;
