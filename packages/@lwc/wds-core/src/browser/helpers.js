@@ -31,7 +31,11 @@ function attachShadowRoots(rootEl) {
 }
 
 export async function insertMarkupIntoDom(markup, parentEl = document.querySelector('#mount')) {
-  parentEl.innerHTML = markup;
+  if (Element.prototype.setHTMLUnsafe) {
+    parentEl.setHTMLUnsafe(markup);
+  } else {
+    parentEl.innerHTML = markup;
+  }
   attachShadowRoots(parentEl);
   return parentEl.firstChild;
 }
