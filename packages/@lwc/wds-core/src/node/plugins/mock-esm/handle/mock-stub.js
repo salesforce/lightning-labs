@@ -1,5 +1,5 @@
-import { MOCK_STUB_PREFIX } from './const.js';
-import { hasDefault, withoutDefault } from './util.js';
+import { MOCK_STUB_PREFIX } from '../const.js';
+import { hasDefault, withoutDefault } from '../util.js';
 
 const buildMockForUnresolved = (exportedNames) => `
 ${withoutDefault(exportedNames)

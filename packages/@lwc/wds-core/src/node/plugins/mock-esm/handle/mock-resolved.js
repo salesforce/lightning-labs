@@ -1,5 +1,5 @@
-import { getUnmockedUri, hasDefault, withoutDefault } from './util.js';
-import { UNMOCKED_ANNOTATION } from './const.js';
+import { getUnmockedUri, hasDefault, withoutDefault } from '../util.js';
+import { UNMOCKED_ANNOTATION } from '../const.js';
 
 const buildMockForResolved = (absPathToUnmockedOriginal, exportedNames, queryString) => `
 import * as __original__ from '${absPathToUnmockedOriginal}${queryString}';

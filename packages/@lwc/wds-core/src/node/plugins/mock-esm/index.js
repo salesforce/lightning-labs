@@ -1,7 +1,7 @@
 import { resolve as pathResolve, dirname } from 'node:path';
-import { makeMockControllerHandler } from './controller.js';
-import { makeMockedModuleHandler } from './mock-resolved.js';
-import { makeMockStubHandler } from './mock-stub.js';
+import { makeMockControllerHandler } from './handle/controller.js';
+import { makeMockedModuleHandler } from './handle/mock-resolved.js';
+import { makeMockStubHandler } from './handle/mock-stub.js';
 import { makeMockImportResolver } from './resolve/mock-import.js';
 import { makeNonexistentMockedModuleResolver } from './resolve/nonexistent-mocked-module.js';
 
