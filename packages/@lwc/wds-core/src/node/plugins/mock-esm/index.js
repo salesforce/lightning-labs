@@ -1,6 +1,6 @@
 import { resolve as pathResolve, dirname } from 'node:path';
 import { stringify as qsStringify } from 'node:querystring';
-import { makeServeMockController } from './mock-controller.js';
+import { makeServeMockController } from './controller.js';
 import { MOCK_CONTROLLER_PREFIX, MOCK_STUB_PREFIX } from './const.js';
 
 const MOCK_IMPORT_PATTERN = /mock(\{ *([a-zA-Z0-9_]+( *, *)?)+\ *}):(.+)/;
