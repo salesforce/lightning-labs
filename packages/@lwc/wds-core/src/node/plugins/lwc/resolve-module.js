@@ -1,4 +1,5 @@
 import * as path from 'node:path';
+import { stringify as qsStringify } from 'node:querystring';
 
 import { resolveModule } from '@lwc/module-resolver';
 
@@ -25,7 +26,14 @@ export function resolveToAbsPath(importSpecifier, importerAbsPath, cwd, moduleDi
   return result;
 }
 
-export function resolveToAbsUrl(importSpecifier, importerAbsPath, rootDir, cwd, moduleDirs) {
+export function resolveToAbsUrl(
+  importSpecifier,
+  importerAbsPath,
+  rootDir,
+  cwd,
+  moduleDirs,
+  queryParams,
+) {
   if (!MODULE_IMPORT_PATTERN.test(importSpecifier)) {
     return;
   }
@@ -34,7 +42,9 @@ export function resolveToAbsUrl(importSpecifier, importerAbsPath, rootDir, cwd, 
     return;
   }
 
-  const resolvedImport = `/${path.relative(rootDir, componentAbsPath.entry)}`;
+  const queryString = Object.keys(queryParams).length ? `?${qsStringify(queryParams)}` : '';
+
+  const resolvedImport = `/${path.relative(rootDir, componentAbsPath.entry)}${queryString}`;
 
   resolvedModules.set(componentAbsPath.entry, {
     resolvedImport,
@@ -48,6 +58,6 @@ export default ({ cwd, rootDir, moduleDirs }) => ({
   name: 'lwc-resolve-module',
   resolveImport({ source, context, code, column, line }) {
     const filePath = getRequestFilePath(context.url, rootDir);
-    return resolveToAbsUrl(source, filePath, rootDir, cwd, moduleDirs);
+    return resolveToAbsUrl(source, filePath, rootDir, cwd, moduleDirs, context.query);
   },
 });

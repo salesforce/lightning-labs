@@ -25,12 +25,15 @@ export default () => {
   return {
     name: 'shadow-globals',
     transform(context) {
-      const [, contextParamStr] = context.url.split('?') ?? '';
+      const [contextPath, contextParamStr] = context.url.split('?') ?? '';
       const { env } = querystring.parse(contextParamStr);
       const { body } = context;
 
+      const isCode = contextPath.endsWith('.js') || contextPath.endsWith('.ts');
+
       if (
         env === 'ssr' &&
+        isCode &&
         // Files provided by uplift project plugins
         !context.url.startsWith('/virtual/') &&
         // UI/browser code that's part of uplift project

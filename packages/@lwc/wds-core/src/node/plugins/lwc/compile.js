@@ -5,8 +5,11 @@ import { transformSync } from '@lwc/compiler';
 import { getRequestFilePath } from '@web/dev-server-core';
 
 import { resolvedModules } from './resolve-module.js';
+import { GENERATED_MODULE_COMMENT } from '../mock-esm/const.js';
 
 const COMPONENT_JS_PATTERN = /\/\w+\/(\w+)\/\1\.[jt]s$/;
+const COMPONENT_CSS_PATTERN = /\/\w+\/(\w+)\/\1\.css$/;
+const COMPONENT_HTML_PATTERN = /\/\w+\/(\w+)\/\1\.html$/;
 export const VIRTUAL_CSS_EMPTY = '/virtual/empty.css';
 export const VIRTUAL_TEMPLATE_EMPTY = '/virtual/empty.html';
 
@@ -41,10 +44,41 @@ function isComponentJavascript(filePath, moduleDirs) {
   return isWithinModuleDir(moduleDirs, filePath) && matchesComponentJsPattern;
 }
 
-function isComponentHtmlOrCss(filePath, componentDirname) {
+function isGeneratedMockModule(code) {
+  return code.includes(GENERATED_MODULE_COMMENT);
+}
+
+function looksLikeComponent(code) {
   return (
-    componentDirs.has(componentDirname) && (filePath.endsWith('.css') || filePath.endsWith('.html'))
+    code.includes('extends LightningElement') ||
+    /export default class [a-zA-Z0-9_]+ extends/.test(code)
   );
+}
+
+function isComponentHtmlOrCss(filePath, componentDirname) {
+  // If a component has multiple templates, the filepath won't follow the typical naming
+  // convention for LWCs. Detecting an HTML or CSS file within a known LWC component
+  // directory is a strong enough proxy for "this is LWC CSS" or "this is an LWC template".
+  if (
+    componentDirs.has(componentDirname) &&
+    (filePath.endsWith('.css') || filePath.endsWith('.html'))
+  ) {
+    return true;
+  }
+  // On the other hand, sometimes HTML and CSS is sometimes pulled in in unexpected ways.
+  // If it matches the expected pattern, an HTML file should be treated as LWC template.
+  if (filePath.endsWith('.html') && COMPONENT_HTML_PATTERN.test(filePath)) {
+    return true;
+  }
+  if (filePath.endsWith('.css') && COMPONENT_CSS_PATTERN.test(filePath)) {
+    return true;
+  }
+  return false;
+}
+
+function stripQueryString(filePath) {
+  const qidx = filePath.indexOf('?');
+  return qidx === -1 ? filePath : filePath.slice(0, qidx);
 }
 
 export default ({ rootDir, moduleDirs }) => ({
@@ -70,21 +104,26 @@ export default ({ rootDir, moduleDirs }) => ({
   },
 
   transform(context) {
-    const filePath = getRequestFilePath(context.url, rootDir);
+    const filePath = stripQueryString(getRequestFilePath(context.url, rootDir));
 
     const componentDirname = path.dirname(filePath);
     const moduleResolution = resolvedModules.get(filePath);
 
+    const isCmpJs = isComponentJavascript(filePath, moduleDirs);
+    const isCmpHtmlOrCss = isComponentHtmlOrCss(filePath, componentDirname);
+    const looksLikeCmp = looksLikeComponent(context.body);
+
     if (
-      !isComponentJavascript(filePath, moduleDirs) &&
-      !isComponentHtmlOrCss(filePath, componentDirname)
+      isGeneratedMockModule(context.body) ||
+      (!isCmpJs && !isCmpHtmlOrCss) ||
+      (isCmpJs && !looksLikeCmp)
     ) {
       return context.body;
     }
 
     componentDirs.add(componentDirname);
 
-    const filename = path.basename(moduleResolution?.resolvedImport ?? filePath);
+    const filename = stripQueryString(path.basename(moduleResolution?.resolvedImport ?? filePath));
     const [namespace, name] = componentDirname.split(path.sep).slice(-2);
 
     const transformOptions = {
@@ -99,7 +138,7 @@ export default ({ rootDir, moduleDirs }) => ({
     const { code, warnings: diagnostics } = transformSync(context.body, filename, transformOptions);
 
     if (diagnostics?.length) {
-      throw new Error(`Sure did not work! ${JSON.stringify(diagnostics, null, 2)}`);
+      console.error(`LWC compiled with warnings: ${JSON.stringify(diagnostics, null, 2)}`);
     }
 
     compiledFiles.add(context.url);

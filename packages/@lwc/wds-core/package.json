@@ -1,6 +1,6 @@
 {
   "name": "@lwc/wds-core",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "",
   "repository": {
     "type": "git",
@@ -18,16 +18,17 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@lwc/engine-server": "^3.8.0",
-    "@lwc/errors": "^3.8.0",
-    "@lwc/module-resolver": "^3.8.0",
-    "@lwc/rollup-plugin": "^3.8.0",
+    "@lwc/engine-server": "^6.5.3",
+    "@lwc/errors": "^6.5.3",
+    "@lwc/module-resolver": "^6.5.3",
+    "@lwc/rollup-plugin": "^6.5.3",
     "@rollup/plugin-alias": "^4.0.4",
     "@rollup/plugin-replace": "^5.0.2",
     "@salesforce/i18n": "^0.0.21",
     "@web/dev-server": "^0.3.1",
     "@web/dev-server-hmr": "^0.3.0",
-    "lwc": "^3.8.0",
+    "es-module-lexer": "^1.5.2",
+    "lwc": "^6.5.3",
     "puppeteer-core": "^21.3.6",
     "resolve": "^1.22.6",
     "sucrase": "^3.34.0"

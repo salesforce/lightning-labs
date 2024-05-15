@@ -11,6 +11,7 @@ import browserUtilsPlugin from './plugins/browser-utils/index.js';
 import envPlugin from './plugins/env.js';
 import importFlagPlugin from './plugins/import-flag.js';
 import lwcPlugins from './plugins/lwc/index.js';
+import mockEsmPlugin from './plugins/mock-esm/index.js';
 import platformPlugin from './plugins/platform/index.js';
 import repairUtf8Plugin from './plugins/repair-utf8.js';
 import shadowGlobalsPlugin from './plugins/shadow-globals.js';
@@ -111,6 +112,7 @@ export function getConfig(options = {}) {
   const plugins = [
     // This plugin needs to do its transforms before other plugins get a chance.
     repairUtf8Plugin(),
+    mockEsmPlugin({ rootDir }),
     typescriptPlugin({ rootDir }),
     importFlagPlugin(),
     shadowGlobalsPlugin(),
