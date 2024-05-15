@@ -53,6 +53,9 @@ ${withoutDefault(exportedNames)
     Object.keys(__mock__.__setters__).forEach(name => {
       __mock__.__setters__[name](newExports[name]);
     });
+    if (__hasDefault__) {
+      __liveDefault__ = newExports.default;
+    }
   },
 };
 `;
