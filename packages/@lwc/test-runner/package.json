@@ -1,6 +1,6 @@
 {
   "name": "@lwc/test-runner",
-  "version": "1.1.0-6",
+  "version": "1.1.0",
   "description": "",
   "repository": {
     "type": "git",
@@ -17,7 +17,7 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@lwc/wds-core": "1.1.0-6",
+    "@lwc/wds-core": "1.1.0",
     "@open-wc/testing": "^3.2.0",
     "@web/test-runner": "^0.17.1",
     "@web/test-runner-puppeteer": "^0.14.0",
