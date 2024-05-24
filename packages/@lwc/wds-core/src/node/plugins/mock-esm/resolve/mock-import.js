@@ -1,6 +1,8 @@
 import { MOCK_CONTROLLER_PREFIX } from '../const.js';
 import { withoutQs } from '../util.js';
-
+import { parse as parseEsm } from 'es-module-lexer';
+import fs from 'node:fs';
+import path from 'node:path';
 const MOCK_IMPORT_PATTERN = /mock(!?)(\{ *([a-zA-Z0-9_]+( *, *)?)+\ *}):(.+)/;
 
 function parseExports(curlyWrappedNames) {
@@ -19,6 +21,7 @@ export const makeMockImportResolver =
     }
     const [, exclamation, curlyWrappedNames, , , verbatimImport] = match;
     const exportedNames = parseExports(curlyWrappedNames);
+    // const resolvedImportPath = path.resolve(verbatimImport);
 
     // Even if the mocked module can be resolved on disk, the developer
     // may not wish that module to provide the default values of the mock.
@@ -38,13 +41,30 @@ export const makeMockImportResolver =
       context,
     });
 
+    // const moduleCode = await fs.promises.readFile(resolvedImportPath, 'utf-8');
+    // const [, _exports] = parseEsm(moduleCode);
+    // const exportedNames = _exports.map((exp) => exp.n);
+
     const mockControllerPath = `${MOCK_CONTROLLER_PREFIX}${resolvedImport}`;
     const moduleKey = withoutQs(resolvedImport);
-    mockedModules.set(moduleKey, {
-      mockControllerPath,
-      exportedNames,
-      importExists: !forceMock && importExists,
-    });
+    if (mockedModules.has(moduleKey)) {
+      // Get the existing entry
+      const existingEntry = mockedModules.get(moduleKey);
+      const newExportedNames = Array.from(
+        new Set([...existingEntry.exportedNames, ...exportedNames]),
+      );
+      mockedModules.set(moduleKey, {
+        ...existingEntry,
+        exportedNames: newExportedNames,
+      });
+    } else {
+      // Add new entry if moduleKey doesn't exist
+      mockedModules.set(moduleKey, {
+        mockControllerPath,
+        exportedNames,
+        importExists: !forceMock && importExists,
+      });
+    }
 
     return mockControllerPath;
   };
