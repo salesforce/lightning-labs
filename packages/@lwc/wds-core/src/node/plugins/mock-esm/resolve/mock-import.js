@@ -1,6 +1,9 @@
 import { MOCK_CONTROLLER_PREFIX } from '../const.js';
 import { withoutQs } from '../util.js';
+import { Mutex } from 'async-mutex';
+
 const MOCK_IMPORT_PATTERN = /mock(!?)(\{ *([a-zA-Z0-9_]+( *, *)?)+\ *}):(.+)/;
+const mutex = new Mutex();
 
 function parseExports(curlyWrappedNames) {
   return curlyWrappedNames
@@ -39,24 +42,32 @@ export const makeMockImportResolver =
 
     const mockControllerPath = `${MOCK_CONTROLLER_PREFIX}${resolvedImport}`;
     const moduleKey = withoutQs(resolvedImport);
-    if (mockedModules.has(moduleKey)) {
-      // Get the existing entry
-      const existingEntry = mockedModules.get(moduleKey);
-      const newExportedNames = Array.from(
-        new Set([...existingEntry.exportedNames, ...exportedNames]),
-      );
-      mockedModules.set(moduleKey, {
-        ...existingEntry,
-        exportedNames: newExportedNames,
-      });
-    } else {
-      // Add new entry if moduleKey doesn't exist
-      mockedModules.set(moduleKey, {
-        mockControllerPath,
-        exportedNames,
-        importExists: !forceMock && importExists,
-      });
+    try {
+      const release = await mutex.acquire();
+      try {
+        if (mockedModules.has(moduleKey)) {
+          const existingEntry = mockedModules.get(moduleKey);
+          const newExportedNames = Array.from(
+            new Set([...existingEntry.exportedNames, ...exportedNames]),
+          );
+          mockedModules.set(moduleKey, {
+            ...existingEntry,
+            exportedNames: newExportedNames,
+          });
+        } else {
+          mockedModules.set(moduleKey, {
+            mockControllerPath,
+            exportedNames,
+            importExists: !forceMock && importExists,
+          });
+        }
+  
+        return mockControllerPath;
+      } finally {
+        release();
+      }
+    } catch (error) {
+      console.error("Error updating mocked modules:", error);
     }
-
     return mockControllerPath;
   };

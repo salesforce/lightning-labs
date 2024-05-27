@@ -31,6 +31,7 @@
     "lwc": "^6.5.3",
     "puppeteer-core": "^21.3.6",
     "resolve": "^1.22.6",
-    "sucrase": "^3.34.0"
+    "sucrase": "^3.34.0",
+    "async-mutex": "^0.5.0"
   }
 }
