@@ -38,15 +38,34 @@ function assertHasSameExports(newExportsArr) {
 }
 
 export default async function mockModule(moduleCode) {
+  const originalModuleCode = "${content}";
+  const [, _originalExports] = parseEsm(originalModuleCode);
+  const originalExportedNames = _originalExports.map(exp => exp.n);
   const [, _exports] = parseEsm(moduleCode);
   const exportedNames = _exports.map(exp => exp.n);
   assertHasSameExports(exportedNames);
-
-  const dataUri = 'data:text/javascript,' + encodeURIComponent(moduleCode);
+  const mergedModule = originalModuleCode.split(';')
+    .map(line => {
+      if (line.trim().startsWith('export')) {
+        const exportName = line.trim().split(' ')[1];
+        const mockedExport = _exports.find(exp => exp.n === exportName);
+        if (mockedExport) {
+          
+          // Find the corresponding export line in the mocked module code
+          const mockedExportLine = moduleCode.split('\\n')
+            .find(line => line.trim().startsWith(\`export \${exportName}\`));
+          if (mockedExportLine) {
+            return mockedExportLine;
+          }
+        }
+      }
+      return line;
+    })
+    .join('\\n');
+  const dataUri = 'data:text/javascript,' + encodeURIComponent(mergedModule);
   await __mock__.useImport(dataUri);
   await mockSSR('${resolvedOrUnresolvedImport}', dataUri);
 }
-
 mockModule.reset = async () => {
   __mock__.resetAll();
   await resetMockSSR('${resolvedOrUnresolvedImport}');
@@ -66,14 +85,15 @@ export const makeMockControllerHandler =
       throw new Error(`Unable to find mock entry for "${resolvedOrRelativeImport}"`);
     }
     const { exportedNames, importExists, content } = mockedModuleEntry;
+    const escapeString = (str) => str.replace(/[\r\n]+/g, ' ').replace(/["'\\]/g, '\\$&');
+    const updateContent = escapeString(content);
     const queryString = Object.keys(queryParams).length ? `?${qsStringify(queryParams)}` : '';
-
     return buildMockController(
       importExists ? resolvedOrRelativeImport : `${MOCK_STUB_PREFIX}${resolvedOrRelativeImport}`,
       exportedNames,
       rootDir,
       queryString,
       importExists,
-      content,
+      updateContent,
     );
   };

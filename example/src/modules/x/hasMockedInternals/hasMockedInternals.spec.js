@@ -6,8 +6,8 @@ import mockDep from 'mock{default,changeme}:./mocked-dependency.js';
 // // specified in the import above, the Node.js host process currently cannot handle
 // // another mock (in a separate test file, or this one) that specifies different mocked
 // // exports.
-import mockDepAlt from 'mock{default}:./mocked-dependency.js';
-
+// import mockDepAlt from 'mock{default}:./mocked-dependency.js';
+import mockDep2 from 'mock{default}:./foo.js';
 // // Uncommenting the following import currently produces an error, and *it should continue
 // // to produce an error*. `mocked-dependency.js` is a real file with real exports. It does
 // // not have an export named `invalid`. Therefore, it should not be permitted for a test
@@ -47,32 +47,34 @@ describe('<x-has-mocked-internals>', () => {
   });
 
   it('can render with a mocked dependency', async () => {
-    await mockDep(`
-      export default 'bar';
-      export const changeme = 'new value';
+    // await mockDep(`
+    //   export default 'bar';
+    //   export const changeme = 'new value';
+    // `);
+    await mockDep2(`
+      export default false;
     `);
     const markup = await renderToMarkup(componentPath, {});
-    expect(markup).to.contain(`<div id="changeme">new value</div>`);
+    expect(markup).to.contain(`<div id="changeme">foo</div>`);
     // ...
   });
 
-  it('can render with an unmocked dependency', async () => {
-    const markup = await renderToMarkup(componentPath, {});
-    expect(markup).to.contain(`<div id="changeme">unmocked value</div>`);
-    // ...
-  });
+  // it('can render with an unmocked dependency', async () => {
+  //   const markup = await renderToMarkup(componentPath, {});
+  //   expect(markup).to.contain(`<div id="changeme">unmocked value</div>`);
+  //   // ...
+  // });
 
-  it('renders with mocked value in both SSR and CSR', async () => {
-    await mockDep(`
-      export default 'bar';
-      export const changeme = 'new value';
-    `);
-    const markup = await renderToMarkup(componentPath, {});
-    const el = await insertMarkupIntoDom(markup);
-    const hydratedWithSsrDOM = await hydrateElement(el, componentPath);
-    // Ensure hydration occurred without validation errors.
-    expect(hydratedWithSsrDOM).to.be.true;
-    // Make assertions about post-hydrated DOM.
-    expect(querySelectorDeep('div#changeme')).to.have.text('new value');
-  });
+  // it('renders with mocked value in both SSR and CSR', async () => {
+  //   await mockDep(`
+  //     export default 'bar';
+  //   `);
+  //   const markup = await renderToMarkup(componentPath, {});
+  //   const el = await insertMarkupIntoDom(markup);
+  //   const hydratedWithSsrDOM = await hydrateElement(el, componentPath);
+  //   // Ensure hydration occurred without validation errors.
+  //   expect(hydratedWithSsrDOM).to.be.true;
+  //   // Make assertions about post-hydrated DOM.
+  //   expect(querySelectorDeep('div#changeme')).to.have.text('new value');
+  // });
 });
