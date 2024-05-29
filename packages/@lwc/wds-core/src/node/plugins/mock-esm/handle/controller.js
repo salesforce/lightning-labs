@@ -13,7 +13,14 @@ const relFromRoot = (absPath) => (rootDir) => pathRelative(rootDir, absPath);
 const lexerAbsUrl = relFromRoot(LEXER_ABS_PATH);
 const browserSsrUrl = relFromRoot(BROWSER_SSR_ABS_PATH);
 
-const buildMockController = (resolvedOrUnresolvedImport, exportedNames, rootDir, query) => `
+const buildMockController = (
+  resolvedOrUnresolvedImport,
+  exportedNames,
+  rootDir,
+  query,
+  importExists,
+  content,
+) => `
 import { parse as parseEsm } from '/${lexerAbsUrl(rootDir)}';
 import { __mock__ } from '${resolvedOrUnresolvedImport}${query}';
 import { mock as mockSSR, resetMock as resetMockSSR } from '/${browserSsrUrl(rootDir)}${query}';
@@ -58,8 +65,7 @@ export const makeMockControllerHandler =
     if (!mockedModuleEntry) {
       throw new Error(`Unable to find mock entry for "${resolvedOrRelativeImport}"`);
     }
-    const { exportedNames, importExists } = mockedModuleEntry;
-
+    const { exportedNames, importExists, content } = mockedModuleEntry;
     const queryString = Object.keys(queryParams).length ? `?${qsStringify(queryParams)}` : '';
 
     return buildMockController(
@@ -67,5 +73,7 @@ export const makeMockControllerHandler =
       exportedNames,
       rootDir,
       queryString,
+      importExists,
+      content,
     );
   };

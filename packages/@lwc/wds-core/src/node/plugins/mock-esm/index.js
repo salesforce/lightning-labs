@@ -70,7 +70,7 @@ export default ({ rootDir }) => {
 
     async resolveImport({ source, context }) {
       return (
-        (await resolveMockImport({ source, context })) ??
+        (await resolveMockImport({ source, context, rootDir })) ??
         (await resolveNonexistentMockedModule({ source, context }))
       );
     },
