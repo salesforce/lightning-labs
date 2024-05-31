@@ -45,30 +45,27 @@ export const makeMockImportResolver =
     const mockControllerPath = `${MOCK_CONTROLLER_PREFIX}${resolvedImport}`;
     const moduleKey = withoutQs(resolvedImport);
     if (importExists) {
-      if (!mockedModules.has(moduleKey)) {
-        try {
-          const absolutePath = path.join(rootdir, resolvedImport);
-          const content = await fs.readFile(absolutePath, 'utf-8');
-          const [, _exports] = parseEsm(content);
-          const originalExportedNames = _exports.map((exp) => exp.n);
-          const invalidExports = exportedNames.filter(
-            (exportName) => !originalExportedNames.includes(exportName),
-          );
-
-          if (invalidExports.length > 0) {
-            throw new Error(`Invalid exports: ${invalidExports.join(', ')}`);
-          }
-
+      try {
+        const absolutePath = path.join(rootdir, resolvedImport);
+        const content = await fs.readFile(absolutePath, 'utf-8');
+        const [, _exports] = parseEsm(content);
+        const originalExportedNames = _exports.map((exp) => exp.n);
+        const invalidExports = exportedNames.filter(
+          (exportName) => !originalExportedNames.includes(exportName),
+        );
+        if (invalidExports.length > 0) {
+          throw new Error(`Invalid exports: ${invalidExports.join(', ')}`);
+        }
+        if (!mockedModules.has(moduleKey)) {
           mockedModules.set(moduleKey, {
             mockControllerPath,
             exportedNames: originalExportedNames,
             importExists: !forceMock && importExists,
-            content: content,
           });
           // Further processing of the content can be done here
-        } catch (error) {
-          console.error('Error updating mocked modules:', error);
         }
+      } catch (error) {
+        console.error('Error while mocking for resolved module:', error);
       }
     } else {
       try {
@@ -86,11 +83,10 @@ export const makeMockImportResolver =
             mockControllerPath,
             exportedNames,
             importExists: !forceMock && importExists,
-            content: '',
           });
         }
       } catch (error) {
-        console.error('Error updating mocked modules:', error);
+        console.error('Error while mocking for unresolved module:', error);
       }
     }
     release();

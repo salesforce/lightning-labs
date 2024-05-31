@@ -32,7 +32,7 @@ const buildMockController = (
   importExists,
   content,
 ) => `
-import {parse as parseEsm} from '/${lexerAbsUrl(rootDir)}';
+import { parse as parseEsm } from '/${lexerAbsUrl(rootDir)}';
 import { __mock__ } from '${resolvedOrUnresolvedImport}${query}';
 import { mock as mockSSR, resetMock as resetMockSSR } from '/${browserSsrUrl(rootDir)}${query}';
 
@@ -55,8 +55,6 @@ export default async function mockModule(moduleCode) {
   const [, _exports] = parseEsm(moduleCode);
   const exportedNames = _exports.map(exp => exp.n);
   assertHasSameExports(exportedNames);
-  // const mergedCode = await mergeExports(originalModuleCode,moduleCode);
-  // const dataUri = 'data:text/javascript,' + encodeURIComponent(moduleCode);
   const dataUri = 'data:text/javascript,' + encodeURIComponent(moduleCode);
   await __mock__.useImport(dataUri);
   await mockSSR('${resolvedOrUnresolvedImport}', dataUri);
@@ -79,16 +77,12 @@ export const makeMockControllerHandler =
     if (!mockedModuleEntry) {
       throw new Error(`Unable to find mock entry for "${resolvedOrRelativeImport}"`);
     }
-    const { exportedNames, importExists, content } = mockedModuleEntry;
-    const escapeString = (str) => str.replace(/[\r\n]+/g, ' ').replace(/["'\\]/g, '\\$&');
-    const updateContent = escapeString(content);
+    const { exportedNames, importExists } = mockedModuleEntry;
     const queryString = Object.keys(queryParams).length ? `?${qsStringify(queryParams)}` : '';
     return buildMockController(
       importExists ? resolvedOrRelativeImport : `${MOCK_STUB_PREFIX}${resolvedOrRelativeImport}`,
       exportedNames,
       rootDir,
       queryString,
-      importExists,
-      updateContent,
     );
   };
