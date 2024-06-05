@@ -41,8 +41,8 @@ export function resolveToAbsUrl(
   if (!componentAbsPath) {
     return;
   }
-
-  const queryString = Object.keys(queryParams).length ? `?${qsStringify(queryParams)}` : '';
+  const queryString =
+    queryParams && Object.keys(queryParams).length ? `?${qsStringify(queryParams)}` : '';
 
   const resolvedImport = `/${path.relative(rootDir, componentAbsPath.entry)}${queryString}`;
 

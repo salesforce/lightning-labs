@@ -40,7 +40,7 @@ function loadJson(jsonPath) {
 
 export function getLwcConfig(dirPath) {
   const lwcConfigPath = path.join(dirPath, 'lwc.config.json');
-  const localPkgJsonPath = path.join(dirPath, 'lwc.config.json');
+  const localPkgJsonPath = path.join(dirPath, 'package.json');
 
   if (fs.existsSync(lwcConfigPath)) {
     try {
