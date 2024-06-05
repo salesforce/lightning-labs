@@ -47,7 +47,9 @@ describe('<x-has-mocked-internals>', () => {
 
   it('works succesfully with partial mocks', async () => {
     await mockDep(`
-      export default 'bar';   // I can partially mock one export i.e default here,it does not affect the values of other unmocked exports
+      // I can partially mock one export i.e default here; it does not affect the
+      // values of other unmocked exports
+      export default 'bar';
     `);
     const markup = await renderToMarkup(componentPath, {});
     const el = await insertMarkupIntoDom(markup);
