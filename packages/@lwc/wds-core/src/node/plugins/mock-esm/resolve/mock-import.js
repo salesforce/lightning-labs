@@ -3,7 +3,6 @@ import { withoutQs } from '../util.js';
 import { parse as parseEsm } from 'es-module-lexer';
 import path from 'node:path';
 import { promises as fs } from 'node:fs';
-import mutex from '../mutex.js';
 const MOCK_IMPORT_PATTERN = /mock(!?)(\{ *([a-zA-Z0-9_]+( *, *)?)+\ *}):(.+)/;
 
 function parseExports(curlyWrappedNames) {
@@ -14,7 +13,7 @@ function parseExports(curlyWrappedNames) {
 }
 
 export const makeMockImportResolver =
-  ({ mockedModules, recursiveResolve }) =>
+  ({ mutex, mockedModules, recursiveResolve }) =>
   async ({ source, context, rootDir }) => {
     const match = MOCK_IMPORT_PATTERN.exec(source);
     if (!match) {

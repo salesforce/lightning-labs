@@ -4,6 +4,7 @@ import { makeMockedModuleHandler } from './handle/mock-resolved.js';
 import { makeMockStubHandler } from './handle/mock-stub.js';
 import { makeMockImportResolver } from './resolve/mock-import.js';
 import { makeNonexistentMockedModuleResolver } from './resolve/nonexistent-mocked-module.js';
+import { Mutex } from 'async-mutex';
 
 function makeRecursiveResolve(allPlugins) {
   const resolvers = allPlugins
@@ -41,6 +42,7 @@ function makeRecursiveResolve(allPlugins) {
 
 export default ({ rootDir }) => {
   const mockedModules = new Map();
+  const mutex = new Mutex();
 
   let resolveMockImport;
   const resolveNonexistentMockedModule = makeNonexistentMockedModuleResolver({ mockedModules });
@@ -58,7 +60,7 @@ export default ({ rootDir }) => {
         );
       }
       const recursiveResolve = makeRecursiveResolve(config.plugins);
-      resolveMockImport = makeMockImportResolver({ mockedModules, recursiveResolve });
+      resolveMockImport = makeMockImportResolver({ mutex, mockedModules, recursiveResolve });
     },
 
     async serve(context) {
