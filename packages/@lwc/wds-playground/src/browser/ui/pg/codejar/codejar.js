@@ -56,6 +56,10 @@ function highlightHtmlText(text) {
   return highlightHtmlAst(ast.children);
 }
 
+/**
+ * @param {any[]} ast
+ * @returns {string}
+ */
 function highlightHtmlAst(ast) {
   let result = '';
   for (const node of ast) {
@@ -70,9 +74,13 @@ function highlightHtmlAst(ast) {
           result += `<span class="highlight-value">"${attr.value}"</span>`;
         }
       }
-      result += '<span class="highlight-tag">&gt;</span>';
-      result += highlightHtmlAst(node.children);
-      result += `<span class="highlight-tag">&lt;/${node.name}&gt;</span>`;
+      if (node.tagDefinition.isVoid) {
+        result += '<span class="highlight-tag"> /&gt;</span>';
+      } else {
+        result += '<span class="highlight-tag">&gt;</span>';
+        result += highlightHtmlAst(node.children);
+        result += `<span class="highlight-tag">&lt;/${node.name}&gt;</span>`;
+      }
     }
   }
   return result;
