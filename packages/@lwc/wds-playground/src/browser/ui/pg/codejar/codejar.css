@@ -15,3 +15,19 @@
 :host(.no-margin) .editor {
   margin: 0;
 }
+
+.highlight-tag {
+  color: blue;
+}
+
+.highlight-attr {
+  color: red;
+}
+
+.highlight-equals {
+  color: black;
+}
+
+.highlight-value {
+  color: green;
+}
