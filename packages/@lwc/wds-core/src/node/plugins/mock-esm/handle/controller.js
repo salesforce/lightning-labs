@@ -21,12 +21,9 @@ import { mock as mockSSR, resetMock as resetMockSSR } from '/${browserSsrUrl(roo
 const canonicalExportedNames = new Set([${exportedNames.map((name) => `'${name}'`).join(', ')}]);
 
 function assertHasSameExports(newExportsArr) {
-  if (
-    newExportsArr.length !== canonicalExportedNames.size ||
-    !newExportsArr.every(el => canonicalExportedNames.has(el))
-  ) { 
+  if (!newExportsArr.every(el => canonicalExportedNames.has(el))) { 
     throw new Error(
-      'Cannot define mock module ("${resolvedOrUnresolvedImport}") with inequivalent exported values.\\n' +
+      'Cannot define mock module ("${resolvedOrUnresolvedImport}") with non-subset exported values.\\n' +
       'Canonical exports: ' + [...canonicalExportedNames].join(',') + '\\n' +
       'Provided exports: ' + newExportsArr.join(',') + '\\n'
     );
@@ -62,9 +59,7 @@ export const makeMockControllerHandler =
       throw new Error(`Unable to find mock entry for "${resolvedOrRelativeImport}"`);
     }
     const { exportedNames, importExists } = mockedModuleEntry;
-
     const queryString = Object.keys(queryParams).length ? `?${qsStringify(queryParams)}` : '';
-
     return buildMockController(
       importExists ? resolvedOrRelativeImport : `${MOCK_STUB_PREFIX}${resolvedOrRelativeImport}`,
       exportedNames,

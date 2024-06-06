@@ -18,7 +18,6 @@ describe('<x-has-mocked-internals>', () => {
 
   it('can render with a mocked dependency', async () => {
     await mockDep(`
-      export default 'bar';
       export const changeme = 'new value';
     `);
     const markup = await renderToMarkup(componentPath, {});
@@ -44,5 +43,20 @@ describe('<x-has-mocked-internals>', () => {
     expect(hydratedWithSsrDOM).to.be.true;
     // Make assertions about post-hydrated DOM.
     expect(querySelectorDeep('div#changeme')).to.have.text('new value');
+  });
+
+  it('works succesfully with partial mocks', async () => {
+    await mockDep(`
+      // I can partially mock one export i.e default here; it does not affect the
+      // values of other unmocked exports
+      export default 'bar';
+    `);
+    const markup = await renderToMarkup(componentPath, {});
+    const el = await insertMarkupIntoDom(markup);
+    const hydratedWithSsrDOM = await hydrateElement(el, componentPath);
+    // Ensure hydration occurred without validation errors.
+    expect(hydratedWithSsrDOM).to.be.true;
+    // Make assertions about post-hydrated DOM.
+    expect(querySelectorDeep('div#changeme')).to.have.text('unmocked value'); //unmocked export changeme retains its values
   });
 });
