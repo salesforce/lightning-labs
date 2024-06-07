@@ -13,14 +13,7 @@ export async function main() {
 
   const args = minimist(process.argv.slice(2));
   const [testGlobPattern] = args._;
-  const {
-    debug,
-    open,
-    watch,
-    console: printConsole = false,
-    root: explicitRootDir,
-    modulesDir,
-  } = args;
+  const { debug, open, watch, quiet, root: explicitRootDir, modulesDir } = args;
 
   const devServerconfig = getConfig({
     explicitRootDir,
@@ -55,7 +48,7 @@ export async function main() {
       manual: !!debug,
       open: !!(open && debug),
       testRunnerHtml,
-      browserLogs: !!printConsole,
+      browserLogs: quiet ? false : true,
       groups: [
         {
           name: 'test-lwcs',
