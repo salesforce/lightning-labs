@@ -24,7 +24,7 @@ async function errorInConnectedCallbackAssertion(utils, self, message) {
   }
 
   const finalError = syncError || asyncError;
-  assert.equal(finalError.message, message, `Expected to throw ${message}`);
+  assert.equal(finalError?.message, message, `Expected to throw ${message}`);
 }
 
 chai.use((_chai, utils) => {
