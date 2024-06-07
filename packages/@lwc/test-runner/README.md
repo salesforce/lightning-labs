@@ -11,6 +11,7 @@ Add `@lwc/test-runner` to your `devDependencies`. Invoke the command in `package
 Similarly to the playground, the test runner should be run from the same directory as `lwc.config.json` or `package.json`. It is invoked like so:
 
 ```
+npm install --save-dev @lwc/test-runner
 npx test-lwcs SPEC_FILE_PATTERN
 ```
 
