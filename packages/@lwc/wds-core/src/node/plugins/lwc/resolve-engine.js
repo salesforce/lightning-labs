@@ -55,7 +55,7 @@ const {
 function patchedRegisterDecorators(Ctor, meta) {
   const patchedMeta = {
     ...meta,
-    wire: undefined,
+    wire: meta.wire,
   };
   return registerDecorators(Ctor, patchedMeta);
 }
