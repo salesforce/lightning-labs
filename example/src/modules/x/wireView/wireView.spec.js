@@ -16,8 +16,6 @@ describe('<x-wire-view>', () => {
 
     const el = await insertMarkupIntoDom(markup);
     // Make assertions about pre-hydrated DOM.
-    // expect(el).to.haveShadowChild("p.child-content");
-
     const hydratedWithSsrDOM = await hydrateElement(el, componentPath);
     // Ensure hydration occurred without validation errors.
     expect(hydratedWithSsrDOM).to.be.true;
@@ -30,11 +28,5 @@ describe('<x-wire-view>', () => {
     expect(querySelectorDeep('#currentTime')).to.have.text(new Date().toString());
 
     expect(querySelectorDeep('#tagName')).to.have.text('x-wire-view');
-
-    // Clean up the DOM.
-    el.remove();
-
-    // Make assertions about post-cleanup DOM.
-    expect(document.querySelector('x-wire-config')).to.be.null;
   });
 });

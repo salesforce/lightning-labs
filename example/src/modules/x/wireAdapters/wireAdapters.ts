@@ -24,43 +24,34 @@ class BaseWireAdapter<
 
   update(config: Config) {
     this.config = config;
+    this.emit();
+  }
+
+  emit() {
+    throw new Error('Not implemented');
   }
 }
 
 export class getCurrentTime extends BaseWireAdapter<Date, { refresh: boolean; interval: number }> {
-  interval?: NodeJS.Timeout;
+  interval?: ReturnType<typeof setInterval>;
 
-  async update(config: { refresh: boolean; interval: number }) {
-    super.update(config);
+  emit() {
     clearInterval(this.interval);
 
-    this.emit();
-
-    if (config.refresh) {
-      this.interval = setInterval(() => this.emit(), config.interval);
-    }
-  }
-
-  async emit() {
     this.dataCallback(new Date());
+
+    if (!this.config) {
+      return;
+    }
+
+    if (this.config.refresh) {
+      this.interval = setInterval(() => this.dataCallback(new Date()), this.config.interval);
+    }
   }
 }
 
 export class getSourceContext extends BaseWireAdapter<{ tagName: string }> {
-  connect() {
-    super.connect();
-    if (this.sourceContext) {
-      this.dataCallback(this.sourceContext);
-    }
-  }
-
-  disconnect() {
-    super.disconnect();
-    this.dataCallback({ tagName: 'unknown' });
-  }
-
-  update() {
-    super.update({});
+  emit() {
     if (this.sourceContext) {
       this.dataCallback(this.sourceContext);
     }
@@ -68,9 +59,11 @@ export class getSourceContext extends BaseWireAdapter<{ tagName: string }> {
 }
 
 export class getResponse extends BaseWireAdapter<string, { url: string }> {
-  async update(config: { url: string }) {
-    super.update(config);
-    const response = await fetch(config.url);
+  async emit() {
+    if (!this.config) {
+      return;
+    }
+    const response = await fetch(this.config.url);
     const text = await response.text();
     this.dataCallback(text);
   }
