@@ -1,6 +1,6 @@
 {
   "name": "@lwc/wds-playground",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "",
   "repository": {
     "type": "git",
@@ -15,7 +15,7 @@
   "license": "MIT",
   "dependencies": {
     "@lwc/metadata": "7.2.0-6.7.0",
-    "@lwc/wds-core": "1.2.1",
+    "@lwc/wds-core": "1.2.2",
     "@shoelace-style/shoelace": "^2.9.0",
     "chrome-launcher": "^1.1.0",
     "codejar": "^4.2.0",
