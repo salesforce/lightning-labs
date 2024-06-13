@@ -16,7 +16,7 @@ export const VIRTUAL_TEMPLATE_EMPTY = '/virtual/empty.html';
 const VIRTUAL_CONTENT = new Map(
   Object.entries({
     [VIRTUAL_CSS_EMPTY]: {
-      body: '',
+      body: 'export default null;',
       type: 'js',
     },
     [VIRTUAL_TEMPLATE_EMPTY]: {
@@ -89,15 +89,19 @@ export default ({ rootDir, moduleDirs }) => ({
   },
 
   resolveImport({ source, context, code, column, line }) {
-    const filePath = getRequestFilePath(context.url, rootDir);
+    const parentModuleFilePath = getRequestFilePath(context.url, rootDir);
+
     const isRelativeImport = source.startsWith('.');
-    const resolvedImport = path.resolve(path.dirname(filePath), source);
+    const resolvedImport = path.resolve(
+      path.dirname(parentModuleFilePath),
+      stripQueryString(source),
+    );
 
     if (isRelativeImport && !fs.existsSync(resolvedImport)) {
-      if (filePath.endsWith('.css')) {
+      if (resolvedImport.endsWith('.css')) {
         return VIRTUAL_CSS_EMPTY;
       }
-      if (filePath.endsWith('.html')) {
+      if (resolvedImport.endsWith('.html')) {
         return VIRTUAL_TEMPLATE_EMPTY;
       }
     }
