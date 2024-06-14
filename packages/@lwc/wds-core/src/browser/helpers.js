@@ -1,6 +1,4 @@
 import { createElement, hasMismatch, hydrateComponent } from '@lwc/engine-dom';
-// import fs from 'node:fs';
-// import path from 'node:path';
 import { determineTagName } from './shared.js';
 import * as ssr from './ssr/index.js';
 
