@@ -6,8 +6,14 @@ import * as ssr from './ssr/index.js';
 
 const thisUrl = new URL(import.meta.url);
 // code from wire-service-jest-util.es.js
-const wireJestUtil = `class TestWireAdapterTemplate {
+const wireJestUtil = `
+let initialValue = undefined;
+
+class TestWireAdapterTemplate {
+    static initialValue;
+
     static emit(value, filterFn) {
+        this.initialValue = value;
         let instances = Array.from(this._wireInstances);
         if (typeof filterFn === 'function') {
             instances = instances.filter((instance) => filterFn(instance.getConfig()));
@@ -27,6 +33,9 @@ const wireJestUtil = `class TestWireAdapterTemplate {
         this.constructor._lastConfig = config;
     }
     connect() {
+        if (this.constructor.initialValue !== undefined) {
+            this.emit(this.constructor.initialValue);
+        }
         this.constructor._lastConfig = {};
         this.constructor._wireInstances.add(this);
     }
@@ -334,7 +343,7 @@ export async function clientSideRender(parentEl, componentPath, props = {}, cach
 export async function wireMockUtil(mockController) {
   const setWireValue = async (exportName, newValue) => {
     await mockController(`
-    ${wireJestUtil}  
+    ${wireJestUtil}
     const data = { 'userId': 1, 'id': 1, 'title': 'delectus aut autem', 'completed': false };
     export const ${exportName} = createTestWireAdapter()
     ${exportName}.emit(data); `);
