@@ -41,7 +41,9 @@ function loadJson(jsonPath) {
 export function getLwcConfig(dirPath) {
   const lwcConfigPath = path.join(dirPath, 'lwc.config.json');
   const localPkgJsonPath = path.join(dirPath, 'package.json');
+  const sfdxProjectJsonPath = path.join(dirPath, 'sfdx-project.json');
 
+  // lwc config in lwc.config.json
   if (fs.existsSync(lwcConfigPath)) {
     try {
       return loadJson(lwcConfigPath);
@@ -49,6 +51,19 @@ export function getLwcConfig(dirPath) {
     }
   }
 
+  // lwc config in sfdx-project.json
+  if (fs.existsSync(sfdxProjectJsonPath)) {
+    try {
+      const sfdxConfig = loadJson(sfdxProjectJsonPath);
+      const pkgDirs = sfdxConfig.packageDirectories || [];
+      // configure LWC to resolve modules from each package directory
+      const modules = pkgDirs.map((d) => ({ dir: path.join(d.path, 'main/default') }));
+      return { modules };
+    } finally {
+    }
+  }
+
+  // lwc config in package.json
   if (fs.existsSync(localPkgJsonPath)) {
     try {
       return loadJson(localPkgJsonPath).lwc;
