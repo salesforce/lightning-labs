@@ -11,4 +11,11 @@ describe('<x-has-mocked-internals>', () => {
     const markup = await renderToMarkup(componentPath, {});
     expect(markup).to.contain(`<div id="todo">Wire Mock Success</div>`);
   });
+  it('wireMockTest', async () => {
+    const wireController = await wireMockUtil(mockWire);
+    const data = { userId: 1, id: 1, title: 'Wire Mock Success1', completed: false };
+    await wireController.setWireValue('myWireAdapter', data);
+    const markup = await renderToMarkup(componentPath, {});
+    expect(markup).to.contain(`<div id="todo">Wire Mock Success1</div>`);
+  });
 });
