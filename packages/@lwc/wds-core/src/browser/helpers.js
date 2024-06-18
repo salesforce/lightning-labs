@@ -1,10 +1,12 @@
 import { createElement, hasMismatch, hydrateComponent } from '@lwc/engine-dom';
 import { determineTagName } from './shared.js';
 import * as ssr from './ssr/index.js';
-import { getWireMockUtil } from './wireMockUtil.js';
 
 const thisUrl = new URL(import.meta.url);
-const wireJestUtilCode = getWireMockUtil();
+const pathname = thisUrl.pathname;
+const directoryPath = pathname.substring(0, pathname.lastIndexOf('/') + 1);
+const newFileUrl = `${thisUrl.origin}${directoryPath}wireMockUtil.js`;
+
 function getQueryString(paramsObj) {
   const queryParams = new URLSearchParams(thisUrl.searchParams);
   if (paramsObj && Object.keys(paramsObj).length > 0) {
@@ -70,9 +72,9 @@ export async function clientSideRender(parentEl, componentPath, props = {}, cach
 export async function wireMockUtil(mockController) {
   const setWireValue = async (exportName, data) => {
     await mockController(`
-    ${wireJestUtilCode}
-    export const ${exportName} = createTestWireAdapter();
-    ${exportName}.emit(${JSON.stringify(data)});
+        import { createTestWireAdapter } from '${newFileUrl}'; 
+        export const ${exportName} = createTestWireAdapter();
+        ${exportName}.emit(${JSON.stringify(data)});
     `);
   };
   return { setWireValue };
