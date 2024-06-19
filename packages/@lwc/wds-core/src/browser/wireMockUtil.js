@@ -1,8 +1,5 @@
 class TestWireAdapterTemplate {
-  static initialValue;
-
   static emit(value, filterFn) {
-    TestWireAdapterTemplate.initialValue = value;
     let instances = Array.from(TestWireAdapterTemplate._wireInstances);
     if (typeof filterFn === 'function') {
       instances = instances.filter((instance) => filterFn(instance.getConfig()));
@@ -28,9 +25,6 @@ class TestWireAdapterTemplate {
   }
 
   connect() {
-    if (TestWireAdapterTemplate.initialValue !== undefined) {
-      this.emit(TestWireAdapterTemplate.initialValue);
-    }
     TestWireAdapterTemplate._lastConfig = {};
     TestWireAdapterTemplate._wireInstances.add(this);
   }
@@ -52,7 +46,17 @@ TestWireAdapterTemplate._lastConfig = null;
 TestWireAdapterTemplate._wireInstances = new Set();
 
 function buildTestWireAdapter() {
-  const _a = class TestWireAdapter extends TestWireAdapterTemplate {};
+  let initialValue = undefined;
+  const _a = class TestWireAdapter extends TestWireAdapterTemplate {
+    static emit(value, filterFn) {
+      initialValue = value;
+      return TestWireAdapterTemplate.emit(initialValue);
+    }
+    connect() {
+      this.emit(initialValue);
+      super.connect();
+    }
+  };
   _a._lastConfig = null;
   _a._wireInstances = new Set();
   return _a;
@@ -152,16 +156,6 @@ function buildLdsTestWireAdapter() {
 }
 
 const knownAdapterMocks = new WeakSet();
-
-function validateAdapterId(adapterId) {
-  if (!adapterId) {
-    throw new Error('No adapter specified');
-  }
-}
-
-function isWireAdapterMock(adapter) {
-  return knownAdapterMocks.has(adapter);
-}
 
 // found no other way to omit these private properties
 function createWireAdapterMock(TestWireAdapter, fn) {

@@ -6,6 +6,7 @@
   },
   "scripts": {
     "test": "test-lwcs ./**/*.spec.js",
+    "test-debug": "test-lwcs ./**/*.spec.js --debug",
     "test-excessive": "test-lwcs ./**/*.excessive-spec.js",
     "playground": "playground x/parent --open"
   },
