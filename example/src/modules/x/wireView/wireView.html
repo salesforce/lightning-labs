@@ -1,0 +1,22 @@
+<template>
+    <div>
+        <h2>getCurrentTime</h2>
+        <label for="refresh">Refresh: </label>
+        <input id="refresh" type="checkbox" checked={refresh} onchange={handleRefreshChange} />
+        <template lwc:if={refresh}>
+            <label for="interval">Interval: </label>
+            <input id="interval" type="range" min="1000" max="10000" value={interval} onchange={handleIntervalChange} />
+            <output>{interval} ms</output>
+        </template>
+        <p id="currentTime">{currentTime}</p>
+    </div>
+    <div>
+        <h2>getSourceContext</h2>
+        <p id="tagName">{sourceContext.tagName}</p>
+    </div>
+    <div>
+        <h2>getResponse</h2>
+        <input type="text" value={url} onchange={handleUrlChange} />
+        <p>{response}</p>
+    </div>
+</template>

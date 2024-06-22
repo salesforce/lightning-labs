@@ -55,7 +55,7 @@ const {
 function patchedRegisterDecorators(Ctor, meta) {
   // This is currently a no-op. In the future, we may need to intercept
   // the registration of decorators, which is why the function exists.
-  return registerDecorators(Ctor, meta);  
+  return registerDecorators(Ctor, meta);
 }
 
 export {
