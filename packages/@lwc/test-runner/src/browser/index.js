@@ -9,7 +9,8 @@ import './shadow.js';
 import './ssr-correctly.js';
 import './visually-identical.js';
 
-const { clientSideRender, hydrateElement, insertMarkupIntoDom, renderToMarkup } = helpers;
+const { clientSideRender, hydrateElement, insertMarkupIntoDom, renderToMarkup, wireMockUtil } =
+  helpers;
 
 export {
   clientSideRender,
@@ -19,4 +20,5 @@ export {
   querySelectorAllDeep,
   querySelectorDeep,
   renderToMarkup,
+  wireMockUtil,
 };

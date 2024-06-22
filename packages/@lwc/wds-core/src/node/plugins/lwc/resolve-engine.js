@@ -53,11 +53,9 @@ const {
   : await import("${engineDomUrl}" + engineDomQueryParam);
 
 function patchedRegisterDecorators(Ctor, meta) {
-  const patchedMeta = {
-    ...meta,
-    wire: meta.wire,
-  };
-  return registerDecorators(Ctor, patchedMeta);
+  // This is currently a no-op. In the future, we may need to intercept
+  // the registration of decorators, which is why the function exists.
+  return registerDecorators(Ctor, meta);
 }
 
 export {
