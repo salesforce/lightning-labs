@@ -1,0 +1,9 @@
+{
+  "lwc": {
+    "modules": [
+      {
+        "dir": "src/modules"
+      }
+    ]
+  }
+}
