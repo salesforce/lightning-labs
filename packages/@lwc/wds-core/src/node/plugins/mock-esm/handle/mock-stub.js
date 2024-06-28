@@ -3,13 +3,17 @@ import { hasDefault, withoutDefault } from '../util.js';
 
 export const buildMockForUnresolved = (exportedNames) => `
 ${GENERATED_MODULE_COMMENT}
-
+const exportObjects = new Map();
 ${withoutDefault(exportedNames)
-  .map((name) => `export let ${name} = null;`)
+  .map(
+    (name) => `exportObjects.set('${name}', null);
+  export let ${name} = null;`,
+  )
   .join('\n')}
 ${
   hasDefault(exportedNames)
     ? `
+exportObjects.set('default', null);
 let __liveDefault__ = null;
 const __hasDefault__ = true;
 export { __liveDefault__ as default };
@@ -22,13 +26,14 @@ const __hasDefault__ = false;
 export const __mock__ = {
   __setters__: {
 ${withoutDefault(exportedNames)
-  .map((name) => `  ${name}: (val) => { ${name} = val; },`)
+  .map((name) => `  ${name}: (val) => { ${name} = val; exportObjects.set('${name}', val); },`)
   .join('\n')}
   },
   set(key, val) {
     if (key === 'default') {
       if (__hasDefault__) {
         __liveDefault__ = val;
+        exportObjects.set('default', val);
       }
     } else {
       __mock__.__setters__[key](val);
@@ -37,10 +42,12 @@ ${withoutDefault(exportedNames)
   reset(key) {
     if (key === 'default') {
       if (__hasDefault__) {
+        exportObjects.set('default', null);
         __liveDefault__ = null;
       }
     } else {
       __mock__.__setters__[key](null);
+      exportObjects.set(key, null);
     }
   },
   resetAll() {
@@ -56,6 +63,12 @@ ${withoutDefault(exportedNames)
     if (__hasDefault__) {
       __liveDefault__ = newExports.default;
     }
+  },
+  async update(exportName,code){
+      const updatedCode = code.replace(/\{exportName\}/g, exportName);
+      const executeCode = new Function(exportName,updatedCode);
+      const obj = exportObjects.get(exportName); 
+      executeCode(obj);
   },
 };
 `;
