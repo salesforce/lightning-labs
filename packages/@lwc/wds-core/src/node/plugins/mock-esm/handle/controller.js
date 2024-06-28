@@ -16,7 +16,9 @@ const browserSsrUrl = relFromRoot(BROWSER_SSR_ABS_PATH);
 const buildMockController = (resolvedOrUnresolvedImport, exportedNames, rootDir, query) => `
 import { parse as parseEsm } from '/${lexerAbsUrl(rootDir)}';
 import { __mock__ } from '${resolvedOrUnresolvedImport}${query}';
-import { mock as mockSSR, resetMock as resetMockSSR } from '/${browserSsrUrl(rootDir)}${query}';
+import { mock as mockSSR, resetMock as resetMockSSR, update as updateSSR } from '/${browserSsrUrl(
+  rootDir,
+)}${query}';
 
 const canonicalExportedNames = new Set([${exportedNames.map((name) => `'${name}'`).join(', ')}]);
 
@@ -39,6 +41,12 @@ export default async function mockModule(moduleCode) {
   await __mock__.useImport(dataUri);
   await mockSSR('${resolvedOrUnresolvedImport}', dataUri);
 }
+
+mockModule.update = async (exportName, code) => {
+    assertHasSameExports( [ exportName ] );
+    await __mock__.update( exportName, code);
+    await updateSSR('${resolvedOrUnresolvedImport}', exportName, code);
+},
 
 mockModule.reset = async () => {
   __mock__.resetAll();

@@ -46,11 +46,12 @@ describe('<x-has-mocked-internals>', () => {
   });
 
   it('works succesfully with partial mocks', async () => {
-    await mockDep(`
-      // I can partially mock one export i.e default here; it does not affect the
-      // values of other unmocked exports
-      export default 'bar';
-    `);
+    await mockDep.update(
+      'default',
+      `
+      {exportName} = 'bar';
+    `,
+    );
     const markup = await renderToMarkup(componentPath, {});
     const el = await insertMarkupIntoDom(markup);
     const hydratedWithSsrDOM = await hydrateElement(el, componentPath);
