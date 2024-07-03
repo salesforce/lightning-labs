@@ -49,6 +49,11 @@ export async function main() {
       open: !!(open && debug),
       testRunnerHtml,
       browserLogs: quiet ? false : true,
+      testFramework: {
+        config: {
+          timeout: 5000, // Timeout in milliseconds (example: 10000 ms = 10 seconds)
+        },
+      },
       groups: [
         {
           name: 'test-lwcs',
