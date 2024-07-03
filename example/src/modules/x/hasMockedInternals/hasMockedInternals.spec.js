@@ -44,13 +44,13 @@ describe('<x-has-mocked-internals>', () => {
     expect(querySelectorDeep('div#changeme')).to.have.text('new value');
   });
 
-  // it('works succesfully with partial mocks', async () => {
-  //   const markup = await renderToMarkup(componentPath, {});
-  //   const el = await insertMarkupIntoDom(markup);
-  //   const hydratedWithSsrDOM = await hydrateElement(el, componentPath);
-  //   // Ensure hydration occurred without validation errors.
-  //   expect(hydratedWithSsrDOM).to.be.true;
-  //   // Make assertions about post-hydrated DOM.
-  //   expect(querySelectorDeep('div#changeme')).to.have.text('unmocked value'); //unmocked export changeme retains its values
-  // });
+  it('works succesfully with partial mocks', async () => {
+    const markup = await renderToMarkup(componentPath, {});
+    const el = await insertMarkupIntoDom(markup);
+    const hydratedWithSsrDOM = await hydrateElement(el, componentPath);
+    // Ensure hydration occurred without validation errors.
+    expect(hydratedWithSsrDOM).to.be.true;
+    // Make assertions about post-hydrated DOM.
+    expect(querySelectorDeep('div#changeme')).to.have.text('unmocked value'); //unmocked export changeme retains its values
+  });
 });

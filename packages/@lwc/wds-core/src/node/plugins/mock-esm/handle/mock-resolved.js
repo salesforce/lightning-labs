@@ -64,20 +64,6 @@ ${withoutDefault(exportedNames)
       __liveDefault__ = newExports.default;
     }
   },
-  async update(exportName,code){
-      if (exportName === 'default') {
-        const updatedCode = code.replace(/\{exportName\}/g, '__liveDefault__');
-        const executeCode = new Function( '__liveDefault__',updatedCode);
-        const obj = exportObjects.get(exportName); 
-        executeCode(obj);
-      }
-      else {
-        const updatedCode = code.replace(/\{exportName\}/g, exportName);
-        const executeCode = new Function(exportName,updatedCode);
-        const obj = exportObjects.get(exportName); 
-        executeCode(obj);
-      }   
-  },
  async eval(code) {
     const AsyncFunction = async function () {}.constructor;
 
