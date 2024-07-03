@@ -42,8 +42,10 @@ export default async function mockModule(moduleCode) {
 }
 
 mockModule.eval = async ( code) => {
-    await __mock__.eval( code);
-    await updateSSR('${resolvedOrUnresolvedImport}', code);
+    const ret = {};
+    ret.csr = await __mock__.eval( code);
+    ret.ssr = await updateSSR('${resolvedOrUnresolvedImport}', code);
+    return ret;
 },
 
 

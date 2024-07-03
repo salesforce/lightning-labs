@@ -22,9 +22,10 @@ describe('<x-has-mocked-internals>', () => {
     const markup = await renderToMarkup(componentPath, {});
     expect(markup).to.contain(`<div id="counter">1</div>`);
 
-    // const sum = await mockDep.eval(`
-    //   return counter + _wrappedCounter.value;
-    // `);
-    // console.log(sum);
+    const sum = await mockDep.eval(`
+      return exports.counter + 3;
+    `);
+    expect(sum.csr).to.equal(4);
+    expect(sum.ssr).to.equal(4);
   });
 });

@@ -59,5 +59,5 @@ async function update(mockedModuleUrl, code) {
   if (!__mock__) {
     throw new Error(`Specified module cannot be mocked: ${mockedModuleUrl}`);
   }
-  await __mock__.eval(code);
+  return await __mock__.eval(code);
 }
