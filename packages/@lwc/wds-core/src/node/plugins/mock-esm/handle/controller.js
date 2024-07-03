@@ -21,7 +21,6 @@ import { mock as mockSSR, resetMock as resetMockSSR, update as updateSSR } from 
 )}${query}';
 
 const canonicalExportedNames = new Set([${exportedNames.map((name) => `'${name}'`).join(', ')}]);
-
 function assertHasSameExports(newExportsArr) {
   if (!newExportsArr.every(el => canonicalExportedNames.has(el))) { 
     throw new Error(
@@ -42,11 +41,11 @@ export default async function mockModule(moduleCode) {
   await mockSSR('${resolvedOrUnresolvedImport}', dataUri);
 }
 
-mockModule.update = async (exportName, code) => {
-    assertHasSameExports( [ exportName ] );
-    await __mock__.update( exportName, code);
-    await updateSSR('${resolvedOrUnresolvedImport}', exportName, code);
+mockModule.eval = async ( code) => {
+    await __mock__.eval( code);
+    await updateSSR('${resolvedOrUnresolvedImport}', code);
 },
+
 
 mockModule.reset = async () => {
   __mock__.resetAll();

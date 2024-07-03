@@ -12,9 +12,9 @@ describe('<x-has-mocked-internals>', () => {
           title: 'Wire Mock Success1',
           completed: false
         };
-        {exportName}.emit(data);
+        exports.myWireAdapter.emit(data);
     `;
-    await mockWire.update('myWireAdapter', updateCode);
+    await mockWire.eval(updateCode);
     const data1 = { userId: 1, id: 1, title: 'Wire Mock Success1', completed: false };
     const markup = await renderToMarkup(componentPath, {});
     expect(markup).to.contain(`<div id="todo">Wire Mock Success1</div>`);
@@ -28,9 +28,9 @@ describe('<x-has-mocked-internals>', () => {
           title: 'Wire Mock Success2',
           completed: false
         };
-        {exportName}.emit(data);
+      exports.myWireAdapter.emit(data);
     `;
-    await mockWire.update('myWireAdapter', updateCode);
+    await mockWire.eval(updateCode);
     const markup = await renderToMarkup(componentPath, {});
     expect(markup).to.contain(`<div id="todo">Wire Mock Success2</div>`);
   });

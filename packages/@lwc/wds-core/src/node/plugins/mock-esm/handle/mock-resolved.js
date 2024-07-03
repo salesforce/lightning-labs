@@ -6,17 +6,15 @@ const buildMockForResolved = (absPathToUnmockedOriginal, exportedNames) => `
 import * as __original__ from '${absPathToUnmockedOriginal}';
 
 ${GENERATED_MODULE_COMMENT}
-const exportObjects = new Map();
 ${withoutDefault(exportedNames)
   .map(
-    (name) => `exportObjects.set('${name}', __original__['${name}']);
+    (name) => `
   export let ${name} = __original__['${name}'];`,
   )
   .join('\n')}
 ${
   hasDefault(exportedNames)
     ? `
-exportObjects.set('default',  __original__.default);
 let __liveDefault__ = __original__.default;
 const __hasDefault__ = true;
 export { __liveDefault__ as default };
@@ -29,14 +27,13 @@ const __hasDefault__ = false;
 export const __mock__ = {
   __setters__: {
 ${withoutDefault(exportedNames)
-  .map((name) => `  ${name}: (val) => { ${name} = val; exportObjects.set('${name}', val); },`)
+  .map((name) => `  ${name}: (val) => { ${name} = val; },`)
   .join('\n')}
   },
   set(key, val) {
     if (key === 'default') {
       if (__hasDefault__) {
         __liveDefault__ = val;
-        exportObjects.set('default', val);
       }
     } else {
       __mock__.__setters__[key](val);
@@ -46,11 +43,9 @@ ${withoutDefault(exportedNames)
     if (key === 'default') {
       if (__hasDefault__) {
         __liveDefault__ = __original__.default;
-        exportObjects.set('default', __original__.default);
       }
     } else {
       __mock__.__setters__[key](__original__[key]);
-      exportObjects.set('default', __original__[key]);
     }
   },
   resetAll() {
@@ -82,6 +77,31 @@ ${withoutDefault(exportedNames)
         const obj = exportObjects.get(exportName); 
         executeCode(obj);
       }   
+  },
+ async eval(code) {
+    const AsyncFunction = async function () {}.constructor;
+
+    // Create a proxy to intercept assignments and update module variables
+    const handler = {
+      set(target, prop, value) {
+        if (prop in __mock__.__setters__) {
+          __mock__.__setters__[prop](value);
+          return true;
+        }
+        return false;
+      },
+      get(target, prop) {
+        if (prop in __mock__.__setters__) {
+          return target[prop];
+        }
+        return undefined;
+      }
+    };
+
+    const exportsProxy = new Proxy({ ${withoutDefault(exportedNames).join(',')} }, handler);
+
+    const executeCode = new AsyncFunction('exports', code);
+    return executeCode(exportsProxy);
   },
 };
 `;

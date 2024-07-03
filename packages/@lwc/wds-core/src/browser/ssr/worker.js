@@ -54,10 +54,10 @@ async function resetMock(mockedModuleUrl) {
   await __mock__.resetAll();
 }
 
-async function update(mockedModuleUrl, exportName, code) {
+async function update(mockedModuleUrl, code) {
   const { __mock__ } = await import(mockedModuleUrl);
   if (!__mock__) {
     throw new Error(`Specified module cannot be mocked: ${mockedModuleUrl}`);
   }
-  await __mock__.update(exportName, code);
+  await __mock__.eval(code);
 }
