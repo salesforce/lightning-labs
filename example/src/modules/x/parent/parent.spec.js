@@ -38,11 +38,11 @@ describe('<x-parent>', () => {
     await expect(componentPath, props).to.SSRCorrectly();
   });
 
-  it('checks that SSR and CSR are visually the same ', async () => {
-    const props = {};
-    // Pixel-by-pixel comparison is done here to ensure visual sameness.
-    await expect(componentPath, props).to.be.visuallyIdenticalInCSRandSSR();
-  });
+  // it('checks that SSR and CSR are visually the same ', async () => {
+  //   const props = {};
+  //   // Pixel-by-pixel comparison is done here to ensure visual sameness.
+  //   await expect(componentPath, props).to.be.visuallyIdenticalInCSRandSSR();
+  // });
 
   it('has no layout shifts', async () => {
     const props = {

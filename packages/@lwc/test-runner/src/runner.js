@@ -51,7 +51,7 @@ export async function main() {
       browserLogs: quiet ? false : true,
       testFramework: {
         config: {
-          timeout: 20000, // Timeout in milliseconds (example: 10000 ms = 10 seconds)
+          timeout: 10000, // Timeout in milliseconds (example: 10000 ms = 10 seconds)
         },
       },
       groups: [
