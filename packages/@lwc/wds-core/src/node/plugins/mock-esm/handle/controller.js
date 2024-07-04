@@ -16,7 +16,7 @@ const browserSsrUrl = relFromRoot(BROWSER_SSR_ABS_PATH);
 const buildMockController = (resolvedOrUnresolvedImport, exportedNames, rootDir, query) => `
 import { parse as parseEsm } from '/${lexerAbsUrl(rootDir)}';
 import { __mock__ } from '${resolvedOrUnresolvedImport}${query}';
-import { mock as mockSSR, resetMock as resetMockSSR, update as updateSSR } from '/${browserSsrUrl(
+import { mock as mockSSR, resetMock as resetMockSSR, evalCode } from '/${browserSsrUrl(
   rootDir,
 )}${query}';
 
@@ -44,7 +44,7 @@ export default async function mockModule(moduleCode) {
 mockModule.eval = async ( code) => {
     const ret = {};
     ret.csr = await __mock__.eval( code);
-    ret.ssr = await updateSSR('${resolvedOrUnresolvedImport}', code);
+    ret.ssr = await evalCode('${resolvedOrUnresolvedImport}', code);
     return ret;
 },
 

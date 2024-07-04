@@ -66,7 +66,6 @@ ${withoutDefault(exportedNames)
   },
  async eval(code) {
     const AsyncFunction = async function () {}.constructor;
-
     // Create a proxy to intercept assignments and update module variables
     const handler = {
       set(target, prop, value) {
@@ -85,7 +84,6 @@ ${withoutDefault(exportedNames)
     };
 
     const exportsProxy = new Proxy({ ${withoutDefault(exportedNames).join(',')} }, handler);
-
     const executeCode = new AsyncFunction('exports', code);
     return executeCode(exportsProxy);
   },

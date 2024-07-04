@@ -2,7 +2,7 @@ import mockWire from 'mock{myWireAdapter}:@salesforce/foo/myWireAdapter';
 import { expect, renderToMarkup, wireMockUtil } from '@lwc/test-runner';
 
 const componentPath = import.meta.resolve('./wireMock.js');
-await wireMockUtil(mockWire);
+await wireMockUtil(mockWire, 'myWireAdapter');
 describe('<x-has-mocked-internals>', () => {
   it('wireMockTest', async () => {
     const updateCode = `

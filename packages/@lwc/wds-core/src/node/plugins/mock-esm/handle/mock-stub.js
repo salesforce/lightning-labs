@@ -4,10 +4,7 @@ import { hasDefault, withoutDefault } from '../util.js';
 export const buildMockForUnresolved = (exportedNames) => `
 ${GENERATED_MODULE_COMMENT}
 ${withoutDefault(exportedNames)
-  .map(
-    (name) => `
-  export let ${name} = null;`,
-  )
+  .map((name) => `export let ${name} = null;`)
   .join('\n')}
 ${
   hasDefault(exportedNames)
@@ -61,40 +58,8 @@ ${withoutDefault(exportedNames)
     }
   },
 
-  // The problem is that the updates to the variables inside the async excuteCode func are not happening in scope of this module i.e the changes inside the functoin
-  // does not reflect any change in module exports for this module
-  // One way to fix this is to run __mock__.setter for all exports of the file after the code is executed and update this module exports with the updated values
-  // inside the async executeCode func
-
-  // async eval(code){
-  //       const AsyncFunction = async function () {}.constructor;
-  //       const setter = ${withoutDefault(exportedNames).length > 0} ? '${withoutDefault(
-    exportedNames,
-  )
-    .map((name) => `__mock__.__setters__.${name}(${name});`)
-    .join(' ')}' : '';
-  //       const updatedCode = code;
-  //       const executeCode = new AsyncFunction(
-  //         ${[
-    ...withoutDefault(exportedNames).map((name) => `'${name}'`),
-    `'__mock__'`,
-    'updatedCode',
-  ].join(', ')}
-  //       );
-  //       return executeCode(${withoutDefault(exportedNames).join(', ')},__mock__); 
-  // },
-
-
-  // This is the second way to do this i.e to build a proxy handles that assures all the changes inside the codetoexecute func are reflected in the original module exports from this 
-  // file .One downside is that in this case inside eval you will use exports.counter to reference the export values
-  // await mockDep.eval(
-  //    exports.counter = 1;
-  //  );
-
-
   async eval(code) {
     const AsyncFunction = async function () {}.constructor;
-
     // Create a proxy to intercept assignments and update module variables
     const handler = {
       set(target, prop, value) {
@@ -117,11 +82,6 @@ ${withoutDefault(exportedNames)
     const executeCode = new AsyncFunction('exports', code);
     return executeCode(exportsProxy);
   },
-
-
-  // Also both of them fails in the condition where a exported value lets say counter for a mock is updated inside another exported func 
-  // which is override in our case as the inside func counter reference is not in scope of this module and cannot be even handled by both of 
-  // these above two ways. 
 };
 `;
 

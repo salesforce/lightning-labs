@@ -14,10 +14,10 @@ describe('<x-has-mocked-internals>', () => {
       exports.counter = 1;
     `);
 
-    // even though this is called still the counter value in not update as the counter reference inside the override func is not considered in scope of mock.
-    await mockDep.eval(`
-       await exports.override(100);
-    `);
+    // Todo: even though this is called still the counter value in not updated as the counter reference inside the override func is not considered in scope of mock.
+    // await mockDep.eval(`
+    //    await exports.override(100);
+    // `);
 
     const markup = await renderToMarkup(componentPath, {});
     expect(markup).to.contain(`<div id="counter">1</div>`);

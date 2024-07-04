@@ -72,8 +72,8 @@ export async function resetMock(mockedModuleUrl) {
   return await task('resetMock', url.href);
 }
 
-export async function update(mockedModuleUrl, code) {
+export async function evalCode(mockedModuleUrl, code) {
   const url = new URL(mockedModuleUrl, document.location.origin);
   url.searchParams.set('env', 'ssr');
-  return await task('update', url.href, code);
+  return await task('evalCode', url.href, code);
 }

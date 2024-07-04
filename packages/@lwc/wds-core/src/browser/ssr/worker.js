@@ -20,8 +20,8 @@ onmessage = async (message) => {
     handler = mock;
   } else if (kind === 'resetMock') {
     handler = resetMock;
-  } else if (kind === 'update') {
-    handler = update;
+  } else if (kind === 'evalCode') {
+    handler = evalCode;
   } else {
     return postMessage([taskId, false, new Error(`Unknown worker task of kind: ${kind}`)]);
   }
@@ -54,7 +54,7 @@ async function resetMock(mockedModuleUrl) {
   await __mock__.resetAll();
 }
 
-async function update(mockedModuleUrl, code) {
+async function evalCode(mockedModuleUrl, code) {
   const { __mock__ } = await import(mockedModuleUrl);
   if (!__mock__) {
     throw new Error(`Specified module cannot be mocked: ${mockedModuleUrl}`);
