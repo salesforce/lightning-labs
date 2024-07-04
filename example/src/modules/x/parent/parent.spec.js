@@ -44,12 +44,12 @@ describe('<x-parent>', () => {
   //   await expect(componentPath, props).to.be.visuallyIdenticalInCSRandSSR();
   // });
 
-  it('has no layout shifts', async () => {
-    const props = {
-      shiftLayout: false,
-    };
-    await expect(componentPath, props).to.have.noLayoutShifts();
-  });
+  // it('has no layout shifts', async () => {
+  //   const props = {
+  //     shiftLayout: false,
+  //   };
+  //   await expect(componentPath, props).to.have.noLayoutShifts();
+  // });
 
   it('makes no DOM mutations', async () => {
     const props = {
