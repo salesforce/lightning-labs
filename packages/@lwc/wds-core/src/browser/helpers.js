@@ -69,13 +69,9 @@ export async function clientSideRender(parentEl, componentPath, props = {}, cach
   return elm;
 }
 
-export async function wireMockUtil(mockController) {
-  const setWireValue = async (exportName, data) => {
-    await mockController(`
-        import { createTestWireAdapter } from '${newFileUrl}'; 
-        export const ${exportName} = createTestWireAdapter();
-        ${exportName}.emit(${JSON.stringify(data)});
-    `);
-  };
-  return { setWireValue };
+export async function wireMockUtil(mockController, exportName) {
+  await mockController(`
+    import { createTestWireAdapter } from '${newFileUrl}'; 
+    export const ${exportName} = createTestWireAdapter();
+`);
 }

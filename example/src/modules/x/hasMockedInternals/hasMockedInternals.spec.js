@@ -32,9 +32,8 @@ describe('<x-has-mocked-internals>', () => {
   });
 
   it('renders with mocked value in both SSR and CSR', async () => {
-    await mockDep(`
-      export default 'bar';
-      export const changeme = 'new value';
+    await mockDep.eval(`
+      exports.changeme = 'new value';
     `);
     const markup = await renderToMarkup(componentPath, {});
     const el = await insertMarkupIntoDom(markup);
@@ -46,11 +45,6 @@ describe('<x-has-mocked-internals>', () => {
   });
 
   it('works succesfully with partial mocks', async () => {
-    await mockDep(`
-      // I can partially mock one export i.e default here; it does not affect the
-      // values of other unmocked exports
-      export default 'bar';
-    `);
     const markup = await renderToMarkup(componentPath, {});
     const el = await insertMarkupIntoDom(markup);
     const hydratedWithSsrDOM = await hydrateElement(el, componentPath);

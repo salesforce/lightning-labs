@@ -3,13 +3,13 @@ import { hasDefault, withoutDefault } from '../util.js';
 
 export const buildMockForUnresolved = (exportedNames) => `
 ${GENERATED_MODULE_COMMENT}
-
 ${withoutDefault(exportedNames)
   .map((name) => `export let ${name} = null;`)
   .join('\n')}
 ${
   hasDefault(exportedNames)
     ? `
+
 let __liveDefault__ = null;
 const __hasDefault__ = true;
 export { __liveDefault__ as default };
@@ -56,6 +56,31 @@ ${withoutDefault(exportedNames)
     if (__hasDefault__) {
       __liveDefault__ = newExports.default;
     }
+  },
+
+  async eval(code) {
+    const AsyncFunction = async function () {}.constructor;
+    // Create a proxy to intercept assignments and update module variables
+    const handler = {
+      set(target, prop, value) {
+        if (prop in __mock__.__setters__) {
+          __mock__.__setters__[prop](value);
+          return true;
+        }
+        return false;
+      },
+      get(target, prop) {
+        if (prop in __mock__.__setters__) {
+          return target[prop];
+        }
+        return undefined;
+      }
+    };
+
+    const exportsProxy = new Proxy({ ${withoutDefault(exportedNames).join(',')} }, handler);
+
+    const executeCode = new AsyncFunction('exports', code);
+    return executeCode(exportsProxy);
   },
 };
 `;

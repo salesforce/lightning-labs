@@ -6,9 +6,11 @@ const buildMockForResolved = (absPathToUnmockedOriginal, exportedNames) => `
 import * as __original__ from '${absPathToUnmockedOriginal}';
 
 ${GENERATED_MODULE_COMMENT}
-
 ${withoutDefault(exportedNames)
-  .map((name) => `export let ${name} = __original__['${name}'];`)
+  .map(
+    (name) => `
+  export let ${name} = __original__['${name}'];`,
+  )
   .join('\n')}
 ${
   hasDefault(exportedNames)
@@ -25,7 +27,7 @@ const __hasDefault__ = false;
 export const __mock__ = {
   __setters__: {
 ${withoutDefault(exportedNames)
-  .map((name) => `    ${name}: (val) => { ${name} = val; },`)
+  .map((name) => `  ${name}: (val) => { ${name} = val; },`)
   .join('\n')}
   },
   set(key, val) {
@@ -61,6 +63,29 @@ ${withoutDefault(exportedNames)
     if (__hasDefault__ && newExports.default) {
       __liveDefault__ = newExports.default;
     }
+  },
+ async eval(code) {
+    const AsyncFunction = async function () {}.constructor;
+    // Create a proxy to intercept assignments and update module variables
+    const handler = {
+      set(target, prop, value) {
+        if (prop in __mock__.__setters__) {
+          __mock__.__setters__[prop](value);
+          return true;
+        }
+        return false;
+      },
+      get(target, prop) {
+        if (prop in __mock__.__setters__) {
+          return target[prop];
+        }
+        return undefined;
+      }
+    };
+
+    const exportsProxy = new Proxy({ ${withoutDefault(exportedNames).join(',')} }, handler);
+    const executeCode = new AsyncFunction('exports', code);
+    return executeCode(exportsProxy);
   },
 };
 `;
