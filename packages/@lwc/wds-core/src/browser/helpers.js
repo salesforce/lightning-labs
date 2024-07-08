@@ -1,7 +1,7 @@
 import { createElement, hasMismatch, hydrateComponent } from '@lwc/engine-dom';
 import { determineTagName } from './shared.js';
 import * as ssr from './ssr/index.js';
-
+import { setHooks as setHookCSR } from 'lwc';
 const thisUrl = new URL(import.meta.url);
 const pathname = thisUrl.pathname;
 const directoryPath = pathname.substring(0, pathname.lastIndexOf('/') + 1);
@@ -74,4 +74,9 @@ export async function wireMockUtil(mockController, exportName) {
     import { createTestWireAdapter } from '${newFileUrl}'; 
     export const ${exportName} = createTestWireAdapter();
 `);
+}
+
+export async function setHooks(componentPath, updatedHooks) {
+  await setHookCSR(updatedHooks);
+  await ssr.setHookSSR(componentPath, updatedHooks);
 }
