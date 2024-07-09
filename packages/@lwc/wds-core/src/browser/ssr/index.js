@@ -60,6 +60,14 @@ export async function render(componentUrl, componentProps) {
   return await task('render', url.href, componentProps);
 }
 
+export async function setHookSSR(componentUrl, updatedHooks) {
+  const url = new URL(componentUrl, document.location.origin);
+  const entries = Object.entries(updatedHooks).map(([key, func]) => [key, func.toString()]);
+  url.searchParams.set('env', 'ssr');
+  const updateHooksSerialized = JSON.stringify(entries);
+  return await task('setHook', url.href, updateHooksSerialized);
+}
+
 export async function mock(mockedModuleUrl, replacementUrl) {
   const url = new URL(mockedModuleUrl, document.location.origin);
   url.searchParams.set('env', 'ssr');

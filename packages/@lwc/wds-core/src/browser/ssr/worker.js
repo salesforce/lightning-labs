@@ -1,5 +1,5 @@
 import '/virtual/import-meta-env.js';
-import { renderComponent } from 'lwc';
+import { renderComponent, setHooks } from 'lwc';
 import { determineTagName } from '../shared.js';
 
 // Because the above imports are resolved asynchronously, the worker
@@ -22,6 +22,8 @@ onmessage = async (message) => {
     handler = resetMock;
   } else if (kind === 'evalCode') {
     handler = evalCode;
+  } else if (kind === 'setHook') {
+    handler = setHook;
   } else {
     return postMessage([taskId, false, new Error(`Unknown worker task of kind: ${kind}`)]);
   }
@@ -36,6 +38,15 @@ onmessage = async (message) => {
 async function render(componentUrl, componentProps) {
   const { default: Cmp } = await import(componentUrl);
   return renderComponent(determineTagName(componentUrl), Cmp, componentProps);
+}
+
+async function setHook(componentUrl, updatedHooksSerialized) {
+  await import(componentUrl);
+  const entries = JSON.parse(updatedHooksSerialized);
+  const hookFuncs = Object.fromEntries(
+    entries.map(([key, funcStr]) => [key, new Function(`return (${funcStr})`)()]),
+  );
+  await setHooks(hookFuncs);
 }
 
 async function mock(mockedModuleUrl, replacementUrl) {
