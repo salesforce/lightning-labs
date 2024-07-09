@@ -62,12 +62,9 @@ export async function render(componentUrl, componentProps) {
 
 export async function setHookSSR(componentUrl, updatedHooks) {
   const url = new URL(componentUrl, document.location.origin);
-  const serializeHooks = (updatedHooks) => {
-    const entries = Object.entries(updatedHooks).map(([key, func]) => [key, func.toString()]);
-    return JSON.stringify(entries);
-  };
+  const entries = Object.entries(updatedHooks).map(([key, func]) => [key, func.toString()]);
   url.searchParams.set('env', 'ssr');
-  const updateHooksSerialized = serializeHooks(updatedHooks);
+  const updateHooksSerialized = JSON.stringify(entries);
   return await task('setHook', url.href, updateHooksSerialized);
 }
 

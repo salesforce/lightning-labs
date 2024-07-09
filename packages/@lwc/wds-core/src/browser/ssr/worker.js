@@ -42,14 +42,10 @@ async function render(componentUrl, componentProps) {
 
 async function setHook(componentUrl, updatedHooksSerialized) {
   await import(componentUrl);
-  const processSerializedHooks = (serializedFuncs) => {
-    const entries = JSON.parse(serializedFuncs);
-    const hooks = Object.fromEntries(
-      entries.map(([key, funcStr]) => [key, new Function(`return (${funcStr})`)()]),
-    );
-    return hooks;
-  };
-  const hookFuncs = processSerializedHooks(updatedHooksSerialized);
+  const entries = JSON.parse(updatedHooksSerialized);
+  const hookFuncs = Object.fromEntries(
+    entries.map(([key, funcStr]) => [key, new Function(`return (${funcStr})`)()]),
+  );
   await setHooks(hookFuncs);
 }
 
