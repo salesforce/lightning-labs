@@ -1,4 +1,5 @@
 import { startTestRunner } from '@web/test-runner';
+import { puppeteerLauncher } from '@web/test-runner-puppeteer';
 import minimist from 'minimist';
 
 import { IMPORT_META_ENV_URL, getConfig, getLwcConfig } from '@lwc/wds-core/node';
@@ -13,7 +14,7 @@ export async function main() {
 
   const args = minimist(process.argv.slice(2));
   const [testGlobPattern] = args._;
-  const { debug, open, watch, quiet, root: explicitRootDir, modulesDir } = args;
+  const { debug, open, watch, quiet, root: explicitRootDir, modulesDir, puppeteer } = args;
 
   const devServerconfig = getConfig({
     explicitRootDir,
@@ -29,7 +30,6 @@ export async function main() {
           import "${IMPORT_META_ENV_URL}";
           window.lwcRuntimeFlags = window.lwcRuntimeFlags || {};
           window.lwcRuntimeFlags.ENABLE_LIGHT_DOM_COMPONENTS = true;
-          console.log("custom HTML page");
         </script>
         </head>
         <body>
@@ -41,6 +41,12 @@ export async function main() {
       </html>
     `;
   };
+
+  let browsers;
+  if (puppeteer) {
+    const launcher = puppeteerLauncher();
+    browsers = [launcher];
+  }
 
   await startTestRunner({
     config: {
@@ -60,6 +66,7 @@ export async function main() {
           files: testGlobPattern,
         },
       ],
+      browsers,
     },
     readCliArgs: false,
     readFileConfig: false,
