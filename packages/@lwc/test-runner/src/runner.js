@@ -67,6 +67,7 @@ export async function main() {
         },
       ],
       browsers,
+      concurrency: 1,
     },
     readCliArgs: false,
     readFileConfig: false,
