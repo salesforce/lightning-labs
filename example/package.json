@@ -5,8 +5,8 @@
     "@lwc/wds-playground": "*"
   },
   "scripts": {
-    "test": "test-lwcs ./**/*.spec.js",
-    "test-debug": "test-lwcs ./**/*.spec.js --debug",
+    "test": "test-lwcs ./**/*.spec.js --puppeteer",
+    "test-debug": "test-lwcs ./**/*.spec.js --debug --puppeteer",
     "test-excessive": "test-lwcs ./**/*.excessive-spec.js",
     "playground": "playground x/parent --open"
   },
