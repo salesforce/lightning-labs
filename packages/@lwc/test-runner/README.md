@@ -86,7 +86,7 @@ await mockDep.eval(`
 `);
 ```
 
-###Evaluating and Returning Values
+### Evaluating and Returning Values
 To evaluate and return values with eval:
 ```
 const sum = await mockDep.eval(`
