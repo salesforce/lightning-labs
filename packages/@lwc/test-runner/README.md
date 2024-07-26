@@ -26,6 +26,10 @@ You can use --quiet tag to supress console logs on terminal.
 ```
 npx test-lwcs './src/**/*.spec.ssr.js' --quiet
 ````
+To invoke the test runner to run in the Puppeteer browser environment, use the --puppeteer option:
+```
+npx test-lwcs './src/**/*.spec.ssr.js' --puppeteer
+```
 
 The available utilities within tests are very much in flux at this time, so there is no extensive documentation. However, there are four imports that are likely to get heavy use in your SSR-related tests:
 
