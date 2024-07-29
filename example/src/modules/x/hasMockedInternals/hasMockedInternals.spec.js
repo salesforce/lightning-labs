@@ -21,13 +21,13 @@ describe('<x-has-mocked-internals>', () => {
       export const changeme = 'new value';
     `);
     const markup = await renderToMarkup(componentPath, {});
-    expect(markup).to.contain(`<div id="changeme">new value</div>`);
+    expect(markup).toContain('<div id="changeme">new value</div>');
     // ...
   });
 
   it('can render with an unmocked dependency', async () => {
     const markup = await renderToMarkup(componentPath, {});
-    expect(markup).to.contain(`<div id="changeme">unmocked value</div>`);
+    expect(markup).toContain('<div id="changeme">unmocked value</div>');
     // ...
   });
 
@@ -39,18 +39,18 @@ describe('<x-has-mocked-internals>', () => {
     const el = await insertMarkupIntoDom(markup);
     const hydratedWithSsrDOM = await hydrateElement(el, componentPath);
     // Ensure hydration occurred without validation errors.
-    expect(hydratedWithSsrDOM).to.be.true;
+    expect(hydratedWithSsrDOM).toBe(true);
     // Make assertions about post-hydrated DOM.
-    expect(querySelectorDeep('div#changeme')).to.have.text('new value');
+    expect(querySelectorDeep('div#changeme')).toHaveTextContent('new value');
   });
 
-  it('works succesfully with partial mocks', async () => {
+  it('works successfully with partial mocks', async () => {
     const markup = await renderToMarkup(componentPath, {});
     const el = await insertMarkupIntoDom(markup);
     const hydratedWithSsrDOM = await hydrateElement(el, componentPath);
     // Ensure hydration occurred without validation errors.
-    expect(hydratedWithSsrDOM).to.be.true;
+    expect(hydratedWithSsrDOM).toBe(true);
     // Make assertions about post-hydrated DOM.
-    expect(querySelectorDeep('div#changeme')).to.have.text('unmocked value'); //unmocked export changeme retains its values
+    expect(querySelectorDeep('div#changeme')).toHaveTextContent('unmocked value'); //unmocked export changeme retains its values
   });
 });
