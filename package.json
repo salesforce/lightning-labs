@@ -12,6 +12,7 @@
     "//": "This is not yet enabled in CI.",
     "release": "semantic-release",
     "test": "npm run test --workspace example",
+    "test:node": " npm run test:node --workspaces --if-present",
     "test:all": "npm run check && npm run test"
   },
   "author": "",
