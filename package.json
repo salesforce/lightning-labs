@@ -12,7 +12,8 @@
     "//": "This is not yet enabled in CI.",
     "release": "semantic-release",
     "test": "npm run test --workspace example",
-    "test:all": "npm run check && npm run test"
+    "test:all": "npm run check && npm run test",
+    "build": "npm run build --workspace @lwc/state"
   },
   "author": "",
   "license": "MIT",
@@ -20,7 +21,8 @@
     "example",
     "packages/@lwc/test-runner",
     "packages/@lwc/wds-core",
-    "packages/@lwc/wds-playground"
+    "packages/@lwc/wds-playground",
+    "packages/@lwc/state"
   ],
   "devDependencies": {
     "@biomejs/biome": "1.6.1",
@@ -29,8 +31,7 @@
     "@semantic-release/npm": "^12.0.0",
     "husky": "^9.0.11",
     "semantic-release": "^23.0.8",
-    "semantic-release-monorepo": "^8.0.2",
-    "typescript": "^5.5.4"
+    "semantic-release-monorepo": "^8.0.2"
   },
   "optionalDependencies": {
     "@biomejs/cli-linux-x64": "1.7.1"

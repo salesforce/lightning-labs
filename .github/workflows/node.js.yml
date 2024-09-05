@@ -29,5 +29,8 @@ jobs:
     - name: Install dependencies
       run: npm install
 
+    - name: Build
+      run: npm run build
+
     - name: Run lint & tests
       run: npm run test:all

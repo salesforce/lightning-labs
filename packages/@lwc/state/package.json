@@ -16,5 +16,6 @@
   "license": "MIT",
   "devDependencies": {
     "typescript": "^5.5.4"
-  }
+  },
+  "files": ["dist/**/*"]
 }
