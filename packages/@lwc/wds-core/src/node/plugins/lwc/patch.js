@@ -2,7 +2,7 @@ import { getRequestFilePath } from '@web/dev-server-core';
 
 const REPLACEMENTS = [
   {
-    pathPattern: /\/engine-dom\/dist\/index\.js$/,
+    pathPattern: /[\/\\]engine-dom[\/\\]dist[\/\\]index\.js$/,
     searchValue: 'export { LightningElement,',
     replaceValue: 'export { LightningElement, hasMismatch,',
   },
