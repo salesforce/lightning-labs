@@ -56,18 +56,38 @@ export const defineState: DefineState = (defineStateCallback) => {
         super();
 
         const atom: MakeAtom = <T>(initialValue: T) => new AtomSignal<T>(initialValue);
+
         const computed: MakeComputed = (inputSignalsObj, computer) => new ComputedSignal(inputSignalsObj, computer);
 
-        const update: MakeUpdate = () => {};
+        const update: MakeUpdate<AtomSignal<unknown>> = <
+          AdditionalArguments extends unknown[],
+          Updater extends (signalValues: ValuesObj, ...args: AdditionalArguments) => ValuesObj,
+          SignalsObj extends Record<string, AtomSignal<unknown>>,
+          ValuesObj extends { [signalName in keyof SignalsObj]?: UnwrapSignal<SignalsObj[keyof SignalsObj]> }
+        >(signalsToUpdate: SignalsObj, updater: Updater) => {
+          return (...uniqueArgs: AdditionalArguments) => {
+            const signalValues = Object.fromEntries(Object.entries(signalsToUpdate).map(([key, signal]) => [key, signal.value])) as ValuesObj;
+            const newValues = updater(signalValues, ...uniqueArgs);
+            for (const [atomName, newValue] of Object.entries(newValues)) {
+              signalsToUpdate[atomName][atomSetter](newValue);
+            }
+          };
+        };
+
+        // @ts-ignore: TODO
         const fromContext: MakeContextHook = () => {};
 
-        const foo = defineStateCallback(atom, computed, update, fromContext)(...args);
+        const internalStateShape = defineStateCallback(atom, computed, update, fromContext)(...args);
+        // with internalStateShape, let's subscribe to all the signals that were returned values in this Record<string, Signal | Updater>
       }
 
       get value() {
         // todo
         return 'foo';
       }
+
+      // TODO: instances of this class must take a shape of `ContextProvider` and `ContextConsumer` in
+      //       the same way that it takes the shape/implements `Signal`
     }
 
 

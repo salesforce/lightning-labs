@@ -11,19 +11,21 @@ export type MakeComputed = <
   ComputedType extends unknown,
 >(inputSignals: InputSignals, computor: (signalValues: SignalValues) => ComputedType) => Signal<ComputedType>
 
-export type MakeUpdate = <
-  SignalsToMutate extends Record<string, Signal<any>>,
+export type MakeUpdate<SignalSubType extends Signal<any>> = <
+  SignalsToMutate extends Record<string, SignalSubType>,
   Values extends { [signalName in keyof SignalsToMutate]?: UnwrapSignal<SignalsToMutate[keyof SignalsToMutate]> },
   MutatorArgs extends unknown[],
-> (
+>(
   signalsToMutate: SignalsToMutate,
   mutator: (signalValues: Values, ...mutatorArgs: MutatorArgs) => Values,
 ) => (...mutatorArgs: MutatorArgs) => void;
 
 export type MakeContextHook = <T, StateDef extends () => Signal<T>>(stateDef: StateDef) => Signal<T>;
 
+export type ExposedUpdater = ((...updaterArgs: any[]) => void);
+
 export type DefineState = <
-  InnerStateShape extends Record<string, Signal<any> | ((...updaterArgs: any[]) => void)>,
+  InnerStateShape extends Record<string, Signal<any> | ExposedUpdater>,
   OuterStateShape extends { readonly [SignalName in keyof InnerStateShape]: UnwrapSignal<InnerStateShape[SignalName]> },
   Args extends any[],
 >(
@@ -34,6 +36,3 @@ export type DefineState = <
     fromContext: MakeContextHook,
   ) => (...args: Args) => InnerStateShape
 ) => (...args: Args) => Signal<OuterStateShape>
-
-// TODO: get rid of this
-export const defineState: DefineState = () => {};
