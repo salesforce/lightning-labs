@@ -118,7 +118,10 @@ export function getConfig(options = {}) {
     shadowGlobalsPlugin(),
     ...(getUniquePlugins?.({ rootDir }) ?? []),
     aliasPlugin([
-      [/^@browser\//, `/${path.relative(rootDir, path.resolve(__dirname, '../browser'))}/`],
+      [
+        /^@browser\//,
+        `/${path.relative(rootDir, path.resolve(__dirname, '../browser')).replace(/\\/g, '/')}/`,
+      ],
     ]),
     ...platformPlugin({
       locale,

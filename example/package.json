@@ -8,7 +8,7 @@
     "test": "test-lwcs ./**/*.spec.js --puppeteer",
     "test-debug": "test-lwcs ./**/*.spec.js --debug --puppeteer",
     "test-excessive": "test-lwcs ./**/*.excessive-spec.js",
-    "playground": "playground x/parent --open"
+    "playground": "npx playground x/parent --open"
   },
   "lwc": {
     "modules": [

@@ -44,7 +44,9 @@ export function resolveToAbsUrl(
   const queryString =
     queryParams && Object.keys(queryParams).length ? `?${qsStringify(queryParams)}` : '';
 
-  const resolvedImport = `/${path.relative(rootDir, componentAbsPath.entry)}${queryString}`;
+  const resolvedImport = `/${path
+    .relative(rootDir, componentAbsPath.entry)
+    .replace(/\\/g, '/')}${queryString}`;
 
   resolvedModules.set(componentAbsPath.entry, {
     resolvedImport,

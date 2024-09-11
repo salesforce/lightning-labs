@@ -1,4 +1,4 @@
-import { relative as pathRelative } from 'node:path';
+import { relative as pathRelative, posix as pathPosix } from 'node:path';
 
 import resolveSync from 'resolve/sync.js';
 
@@ -102,8 +102,13 @@ export default ({ rootDir }) => {
   const engineDomAbsPath = resolveSync('@lwc/engine-dom/dist/index.js', {
     basedir: toolkitSrcPath,
   });
-  const engineServerUrl = `/${pathRelative(rootDir, engineServerAbsPath)}`;
-  const engineDomUrl = `/${pathRelative(rootDir, engineDomAbsPath)}`;
+  // Calculate relative paths from the rootDir
+  const relativeEngineServerPath = pathRelative(rootDir, engineServerAbsPath);
+  const relativeEngineDomPath = pathRelative(rootDir, engineDomAbsPath);
+
+  // Convert to POSIX-style paths and ensure no leading '../'
+  const engineServerUrl = `/${pathPosix.normalize(relativeEngineServerPath).replace(/\\/g, '/')}`;
+  const engineDomUrl = `/${pathPosix.normalize(relativeEngineDomPath).replace(/\\/g, '/')}`;
 
   return {
     name: 'lwc-resolve-engine',

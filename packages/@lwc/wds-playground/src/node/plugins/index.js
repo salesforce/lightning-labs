@@ -14,19 +14,23 @@ export function getIndexHtmlPlugin(componentSpecifier, componentMetadata, rootDi
   //   1) the virtual index HTML, which we are generating dynamically, does not
   //      get transformed with the resolveImport hook, and
   //   2) inside the SSR Worker, it is imported again using dynamic import.
-  const componentUrl = resolveToAbsUrl(componentSpecifier, `${cwd}/foo`, rootDir, cwd);
-  const moduleMainUrl = `/${path.relative(
-    rootDir,
-    path.resolve(__dirname, '../../browser/main.js'),
-  )}`;
-  const shoelaceBaseUrl = `/${path.relative(
-    rootDir,
-    path.dirname(
-      resolveSync('@shoelace-style/shoelace/dist/shoelace.js', {
-        basedir: __dirname,
-      }),
-    ),
-  )}`;
+  const componentPath = resolveToAbsUrl(componentSpecifier, path.join(cwd, 'foo'), rootDir, cwd);
+
+  // Normalize the component URL
+  const componentUrl = `/${path.relative(rootDir, componentPath).replace(/\\/g, '/')}`;
+
+  // Resolve the module's main URL relative to rootDir
+  const moduleMainPath = path.resolve(__dirname, '../../browser/main.js');
+
+  const moduleMainUrl = `/${path.relative(rootDir, moduleMainPath).replace(/\\/g, '/')}`;
+
+  // Resolve the Shoelace base URL
+  const shoelacePath = resolveSync('@shoelace-style/shoelace/dist/shoelace.js', {
+    basedir: __dirname,
+  });
+  const shoelaceDir = path.dirname(shoelacePath);
+  const relativeShoelacePath = path.relative(rootDir, shoelaceDir);
+  const shoelaceBaseUrl = `/${relativeShoelacePath.replace(/\\/g, '/')}`;
 
   return indexHtmlPlugin({
     componentUrl,

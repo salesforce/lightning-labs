@@ -7,9 +7,9 @@ import { getRequestFilePath } from '@web/dev-server-core';
 import { resolvedModules } from './resolve-module.js';
 import { GENERATED_MODULE_COMMENT } from '../mock-esm/const.js';
 
-const COMPONENT_JS_PATTERN = /\/\w+\/(\w+)\/\1\.[jt]s$/;
-const COMPONENT_CSS_PATTERN = /\/\w+\/(\w+)\/\1\.css$/;
-const COMPONENT_HTML_PATTERN = /\/\w+\/(\w+)\/\1\.html$/;
+const COMPONENT_JS_PATTERN = /[\/\\]\w+[\/\\](\w+)[\/\\]\1\.[jt]s$/;
+const COMPONENT_CSS_PATTERN = /[\/\\]\w+[\/\\](\w+)[\/\\]\1\.css$/;
+const COMPONENT_HTML_PATTERN = /[\/\\]\w+[\/\\](\w+)[\/\\]\1\.html$/;
 export const VIRTUAL_CSS_EMPTY = '/virtual/empty.css';
 export const VIRTUAL_TEMPLATE_EMPTY = '/virtual/empty.html';
 
@@ -108,7 +108,7 @@ export default ({ rootDir, moduleDirs }) => ({
   },
 
   transform(context) {
-    const filePath = stripQueryString(getRequestFilePath(context.url, rootDir));
+    const filePath = path.normalize(stripQueryString(getRequestFilePath(context.url, rootDir)));
 
     const componentDirname = path.dirname(filePath);
     const moduleResolution = resolvedModules.get(filePath);
@@ -136,7 +136,10 @@ export default ({ rootDir, moduleDirs }) => ({
       // TODO: handle scopedStyles
       scopedStyles: false,
       // Enable template expression in playground UI but not elsewhere.
-      experimentalComplexExpressions: filePath.includes('wds-playground/src/browser/ui/pg/'),
+      experimentalComplexExpressions: path
+        .normalize(filePath)
+        .replace(/\\/g, '/')
+        .includes('wds-playground/src/browser/ui/pg/'),
     };
 
     const { code, warnings: diagnostics } = transformSync(context.body, filename, transformOptions);
