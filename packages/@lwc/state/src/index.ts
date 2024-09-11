@@ -51,6 +51,25 @@ class ComputedSignal<T> extends SignalBaseClass<T> {
 
 const isUpdater = (signalOrUpdater: Signal<any> | ExposedUpdater) => typeof signalOrUpdater === 'function';
 
+const atom: MakeAtom = <T>(initialValue: T) => new AtomSignal<T>(initialValue);
+
+const computed: MakeComputed = (inputSignalsObj, computer) => new ComputedSignal(inputSignalsObj, computer);
+
+const update: MakeUpdate<AtomSignal<unknown>> = <
+  AdditionalArguments extends unknown[],
+  Updater extends (signalValues: ValuesObj, ...args: AdditionalArguments) => ValuesObj,
+  SignalsObj extends Record<string, AtomSignal<unknown>>,
+  ValuesObj extends { [signalName in keyof SignalsObj]?: UnwrapSignal<SignalsObj[keyof SignalsObj]> }
+>(signalsToUpdate: SignalsObj, updater: Updater) => {
+  return (...uniqueArgs: AdditionalArguments) => {
+    const signalValues = Object.fromEntries(Object.entries(signalsToUpdate).map(([key, signal]) => [key, signal.value])) as ValuesObj;
+    const newValues = updater(signalValues, ...uniqueArgs);
+    for (const [atomName, newValue] of Object.entries(newValues)) {
+      signalsToUpdate[atomName][atomSetter](newValue);
+    }
+  };
+};
+
 export const defineState: DefineState = (defineStateCallback) => {
   return (...args) => {
     class StateManagerSignal<OuterStateShape> extends SignalBaseClass<OuterStateShape> {
@@ -58,25 +77,6 @@ export const defineState: DefineState = (defineStateCallback) => {
 
       constructor() {
         super();
-
-        const atom: MakeAtom = <T>(initialValue: T) => new AtomSignal<T>(initialValue);
-
-        const computed: MakeComputed = (inputSignalsObj, computer) => new ComputedSignal(inputSignalsObj, computer);
-
-        const update: MakeUpdate<AtomSignal<unknown>> = <
-          AdditionalArguments extends unknown[],
-          Updater extends (signalValues: ValuesObj, ...args: AdditionalArguments) => ValuesObj,
-          SignalsObj extends Record<string, AtomSignal<unknown>>,
-          ValuesObj extends { [signalName in keyof SignalsObj]?: UnwrapSignal<SignalsObj[keyof SignalsObj]> }
-        >(signalsToUpdate: SignalsObj, updater: Updater) => {
-          return (...uniqueArgs: AdditionalArguments) => {
-            const signalValues = Object.fromEntries(Object.entries(signalsToUpdate).map(([key, signal]) => [key, signal.value])) as ValuesObj;
-            const newValues = updater(signalValues, ...uniqueArgs);
-            for (const [atomName, newValue] of Object.entries(newValues)) {
-              signalsToUpdate[atomName][atomSetter](newValue);
-            }
-          };
-        };
 
         // @ts-ignore: TODO
         const fromContext: MakeContextHook = () => {};
@@ -108,7 +108,6 @@ export const defineState: DefineState = (defineStateCallback) => {
       // TODO: instances of this class must take the shape of `ContextProvider` and `ContextConsumer` in
       //       the same way that it takes the shape/implements `Signal`
     }
-
 
     return new StateManagerSignal();
   };
