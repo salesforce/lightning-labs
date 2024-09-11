@@ -49,9 +49,13 @@ class ComputedSignal<T> extends SignalBaseClass<T> {
   }
 }
 
+const isUpdater = (signalOrUpdater: Signal<any> | ExposedUpdater) => typeof signalOrUpdater === 'function';
+
 export const defineState: DefineState = (defineStateCallback) => {
   return (...args) => {
     class StateManagerSignal<OuterStateShape> extends SignalBaseClass<OuterStateShape> {
+      internalStateShape: Record<string, Signal<any> | ExposedUpdater>;
+
       constructor() {
         super();
 
@@ -77,16 +81,31 @@ export const defineState: DefineState = (defineStateCallback) => {
         // @ts-ignore: TODO
         const fromContext: MakeContextHook = () => {};
 
-        const internalStateShape = defineStateCallback(atom, computed, update, fromContext)(...args);
-        // with internalStateShape, let's subscribe to all the signals that were returned values in this Record<string, Signal | Updater>
+        this.internalStateShape = defineStateCallback(atom, computed, update, fromContext)(...args);
+
+        for (const signalOrUpdater of Object.values(this.internalStateShape)) {
+          if (!isUpdater(signalOrUpdater)) {
+            // Subscribe to changes to exposed state atoms, so that the entire state manager signal
+            // "reacts" when the atoms change.
+            (signalOrUpdater as Signal<unknown>).subscribe(this.notify.bind(this));
+          }
+        }
       }
 
       get value() {
-        // todo
-        return 'foo';
+        return Object.freeze(Object.fromEntries(
+          Object.entries(this.internalStateShape)
+            .map(([key, signalOrUpdater]) => {
+              if (isUpdater(signalOrUpdater)) {
+                return [key, signalOrUpdater];
+              } else {
+                return [key, signalOrUpdater.value];
+              }
+            })
+        )) as OuterStateShape;
       }
 
-      // TODO: instances of this class must take a shape of `ContextProvider` and `ContextConsumer` in
+      // TODO: instances of this class must take the shape of `ContextProvider` and `ContextConsumer` in
       //       the same way that it takes the shape/implements `Signal`
     }
 
