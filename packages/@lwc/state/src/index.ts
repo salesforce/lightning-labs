@@ -1,5 +1,6 @@
-import { Signal, SignalBaseClass } from '@lwc/signals';
+import { type Signal, SignalBaseClass } from '@lwc/signals';
 import type {
+  Computer,
   UnwrapSignal,
   MakeAtom,
   MakeComputed,
@@ -9,7 +10,7 @@ import type {
   DefineState,
 } from './types.ts';
 
-const atomSetter = Symbol('atomSetter');;
+const atomSetter = Symbol('atomSetter');
 
 class AtomSignal<T> extends SignalBaseClass<T> {
   _value: T;
@@ -21,6 +22,7 @@ class AtomSignal<T> extends SignalBaseClass<T> {
 
   [atomSetter](value: T) {
     this._value = value;
+    this.notify();
   }
 
   get value() {
@@ -29,10 +31,11 @@ class AtomSignal<T> extends SignalBaseClass<T> {
 }
 
 class ComputedSignal<T> extends SignalBaseClass<T> {
-  private computer: (signalValues: Record<string, unknown>) => T;
-  dependencies: Record<string, Signal<unknown>>;
+  private computer: Computer<unknown>;
+  private dependencies: Record<string, Signal<unknown>>;
+  private _value: T;
 
-  constructor(inputSignalsObj: Record<string, Signal<unknown>>, computer: any) {
+  constructor(inputSignalsObj: Record<string, Signal<unknown>>, computer: Computer<unknown>) {
     super();
     this.computer = computer;
     this.dependencies = inputSignalsObj;
@@ -43,27 +46,55 @@ class ComputedSignal<T> extends SignalBaseClass<T> {
     }
   }
 
+  private computeValue() {
+    const dependencyValues: Record<string, unknown> = {};
+    for (const [signalName, signal] of Object.entries(this.dependencies)) {
+      dependencyValues[signalName] = signal.value;
+    }
+    this._value = this.computer(dependencyValues) as T;
+  }
+
+  protected override notify(): void {
+    this.computeValue();
+    super.notify();
+  }
+
   get value() {
-    const dependencyValues = Object.fromEntries(Object.entries(this.dependencies).map(([key, signal]) => [key, signal.value]));
-    return this.computer(dependencyValues);
+    if (!this._value) {
+      this.computeValue();
+    }
+    return this._value;
   }
 }
 
-const isUpdater = (signalOrUpdater: Signal<any> | ExposedUpdater) => typeof signalOrUpdater === 'function';
+const isUpdater = (signalOrUpdater: Signal<unknown> | ExposedUpdater) =>
+  typeof signalOrUpdater === 'function';
 
-const atom: MakeAtom = <T>(initialValue: T) => new AtomSignal<T>(initialValue);
+const atom: MakeAtom = <T,>(initialValue: T) => new AtomSignal<T>(initialValue);
 
-const computed: MakeComputed = (inputSignalsObj, computer) => new ComputedSignal(inputSignalsObj, computer);
+const computed: MakeComputed = (inputSignalsObj, computer) =>
+  new ComputedSignal(inputSignalsObj, computer);
 
 const update: MakeUpdate<AtomSignal<unknown>> = <
   AdditionalArguments extends unknown[],
   Updater extends (signalValues: ValuesObj, ...args: AdditionalArguments) => ValuesObj,
   SignalsObj extends Record<string, AtomSignal<unknown>>,
-  ValuesObj extends { [signalName in keyof SignalsObj]?: UnwrapSignal<SignalsObj[keyof SignalsObj]> }
->(signalsToUpdate: SignalsObj, updater: Updater) => {
+  ValuesObj extends {
+    [signalName in keyof SignalsObj]?: UnwrapSignal<SignalsObj[keyof SignalsObj]>;
+  },
+>(
+  signalsToUpdate: SignalsObj,
+  updater: Updater,
+) => {
   return (...uniqueArgs: AdditionalArguments) => {
-    const signalValues = Object.fromEntries(Object.entries(signalsToUpdate).map(([key, signal]) => [key, signal.value])) as ValuesObj;
+    const signalValues = {} as ValuesObj;
+
+    for (const [signalName, signal] of Object.entries(signalsToUpdate)) {
+      signalValues[signalName as keyof ValuesObj] = signal.value as ValuesObj[keyof ValuesObj];
+    }
+
     const newValues = updater(signalValues, ...uniqueArgs);
+
     for (const [atomName, newValue] of Object.entries(newValues)) {
       signalsToUpdate[atomName][atomSetter](newValue);
     }
@@ -73,7 +104,9 @@ const update: MakeUpdate<AtomSignal<unknown>> = <
 export const defineState: DefineState = (defineStateCallback) => {
   return (...args) => {
     class StateManagerSignal<OuterStateShape> extends SignalBaseClass<OuterStateShape> {
-      internalStateShape: Record<string, Signal<any> | ExposedUpdater>;
+      private internalStateShape: Record<string, Signal<unknown> | ExposedUpdater>;
+      private isNotifyScheduled = false;
+      private _value: OuterStateShape;
 
       constructor() {
         super();
@@ -87,22 +120,40 @@ export const defineState: DefineState = (defineStateCallback) => {
           if (!isUpdater(signalOrUpdater)) {
             // Subscribe to changes to exposed state atoms, so that the entire state manager signal
             // "reacts" when the atoms change.
-            (signalOrUpdater as Signal<unknown>).subscribe(this.notify.bind(this));
+            (signalOrUpdater as Signal<unknown>).subscribe(this.scheduledNotify.bind(this));
           }
         }
       }
 
+      private computeValue() {
+        const computedValue = Object.fromEntries(
+          Object.entries(this.internalStateShape).map(([key, signalOrUpdater]) => {
+            if (isUpdater(signalOrUpdater)) {
+              return [key, signalOrUpdater];
+            }
+            return [key, signalOrUpdater.value];
+          }),
+        );
+
+        this._value = Object.freeze(computedValue) as OuterStateShape;
+      }
+
+      private scheduledNotify() {
+        if (!this.isNotifyScheduled) {
+          this.isNotifyScheduled = true;
+          queueMicrotask(() => {
+            this.isNotifyScheduled = false;
+            this.computeValue();
+            this.notify();
+          });
+        }
+      }
+
       get value() {
-        return Object.freeze(Object.fromEntries(
-          Object.entries(this.internalStateShape)
-            .map(([key, signalOrUpdater]) => {
-              if (isUpdater(signalOrUpdater)) {
-                return [key, signalOrUpdater];
-              } else {
-                return [key, signalOrUpdater.value];
-              }
-            })
-        )) as OuterStateShape;
+        if (!this._value) {
+          this.computeValue();
+        }
+        return this._value;
       }
 
       // TODO: instances of this class must take the shape of `ContextProvider` and `ContextConsumer` in
