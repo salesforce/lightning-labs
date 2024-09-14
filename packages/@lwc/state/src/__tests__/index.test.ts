@@ -32,7 +32,6 @@ describe('state manager', () => {
 
   test('increment updates count and doubleCount', async () => {
     const s = state(1);
-    
     s.value.increment();
     await flushMicrotasks();
 
@@ -96,7 +95,7 @@ describe('state manager', () => {
     await flushMicrotasks();
     expect(sub).toHaveBeenCalledTimes(1);
     unsubscribe();
-    
+
     s.value.increment();
     await flushMicrotasks();
     expect(sub).toHaveBeenCalledTimes(1);
