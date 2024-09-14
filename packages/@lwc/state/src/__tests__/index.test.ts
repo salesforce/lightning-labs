@@ -23,53 +23,52 @@ const state = defineState((atom, computed, update, _fromContext) => (...args) =>
 const flushMicrotasks = () => new Promise((resolve) => queueMicrotask(resolve as any));
 
 describe('state manager', () => {
-  test('test 1', async () => {
-    const s = state(1);
-    expect(s.value.count).toBe(1);
-    expect(s.value.doubleCount).toBe(2);
-    s.value.increment();
-    await flushMicrotasks();
-    expect(s.value.count).toBe(2);
-    expect(s.value.doubleCount).toBe(4);
-  });
-
-  test('test 2', async () => {
-    const s = state(1);
-    const sub = vi.fn();
-    s.subscribe(sub);
-    s.value.increment();
-    await flushMicrotasks();
-    expect(sub).toHaveBeenCalledTimes(1);
-  });
-
   test('initial state', () => {
     const s = state(5);
+
     expect(s.value.count).toBe(5);
     expect(s.value.doubleCount).toBe(10);
   });
 
   test('increment updates count and doubleCount', async () => {
     const s = state(1);
+    
     s.value.increment();
     await flushMicrotasks();
+
     expect(s.value.count).toBe(2);
     expect(s.value.doubleCount).toBe(4);
   });
 
+  test('subscribing to state manager works', async () => {
+    const s = state(1);
+    const sub = vi.fn();
+
+    s.subscribe(sub);
+    s.value.increment();
+    await flushMicrotasks();
+
+    expect(sub).toHaveBeenCalledTimes(1);
+  });
+
   test('incrementBy updates count and doubleCount', async () => {
     const s = state(1);
+
     s.value.incrementBy(3);
     await flushMicrotasks();
+
     expect(s.value.count).toBe(4);
     expect(s.value.doubleCount).toBe(8);
   });
 
   test('multiple updates', async () => {
     const s = state(0);
+
     s.value.increment();
     s.value.increment();
     s.value.incrementBy(3);
     await flushMicrotasks();
+
     expect(s.value.count).toBe(5);
     expect(s.value.doubleCount).toBe(10);
   });
@@ -78,8 +77,10 @@ describe('state manager', () => {
     const s = state(1);
     const sub = vi.fn();
     s.subscribe(sub);
+
     s.value.increment();
     await flushMicrotasks();
+
     expect(sub).toHaveBeenCalledTimes(1);
     s.value.incrementBy(2);
     await flushMicrotasks();
@@ -89,11 +90,13 @@ describe('state manager', () => {
   test('unsubscribe stops notifications', async () => {
     const s = state(1);
     const sub = vi.fn();
+
     const unsubscribe = s.subscribe(sub);
     s.value.increment();
     await flushMicrotasks();
     expect(sub).toHaveBeenCalledTimes(1);
     unsubscribe();
+    
     s.value.increment();
     await flushMicrotasks();
     expect(sub).toHaveBeenCalledTimes(1);
