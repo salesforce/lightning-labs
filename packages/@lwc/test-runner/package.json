@@ -17,7 +17,7 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@lwc/wds-core": "1.3.1",
+    "@lwc/wds-core": "1.3.3",
     "@open-wc/testing": "^3.2.0",
     "@vitest/expect": "^2.0.4",
     "@web/test-runner": "^0.17.1",
