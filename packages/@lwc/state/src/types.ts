@@ -17,12 +17,14 @@ export type MakeComputed = <
   computer: Computer<ComputedType>,
 ) => Signal<ComputedType>;
 
-export type MakeUpdate<SignalSubType extends Signal<unknown>> = <
+export type MutatorArgs = Array<unknown>;
+
+export type MakeUpdate = <
+  SignalSubType extends Signal<unknown>,
   SignalsToMutate extends Record<string, SignalSubType>,
   Values extends {
-    [signalName in keyof SignalsToMutate]?: UnwrapSignal<SignalsToMutate[keyof SignalsToMutate]>;
+    [SignalName in keyof SignalsToMutate]?: UnwrapSignal<SignalsToMutate[SignalName]>;
   },
-  MutatorArgs extends unknown[],
 >(
   signalsToMutate: SignalsToMutate,
   mutator: (signalValues: Values, ...mutatorArgs: MutatorArgs) => Values,
@@ -44,7 +46,7 @@ export type DefineState = <
   defineStateCb: (
     atom: MakeAtom,
     computed: MakeComputed,
-    update: MakeUpdate<Signal<unknown>>,
+    update: MakeUpdate,
     fromContext: MakeContextHook,
   ) => (...args: Args) => InnerStateShape,
 ) => (...args: Args) => Signal<OuterStateShape>;

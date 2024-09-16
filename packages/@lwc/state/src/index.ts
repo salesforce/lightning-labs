@@ -75,12 +75,13 @@ const atom: MakeAtom = <T,>(initialValue: T) => new AtomSignal<T>(initialValue);
 const computed: MakeComputed = (inputSignalsObj, computer) =>
   new ComputedSignal(inputSignalsObj, computer);
 
-const update: MakeUpdate<AtomSignal<unknown>> = <
+const update: MakeUpdate = <
+  SignalSubType extends Signal<unknown>,
   AdditionalArguments extends unknown[],
   Updater extends (signalValues: ValuesObj, ...args: AdditionalArguments) => ValuesObj,
-  SignalsObj extends Record<string, AtomSignal<unknown>>,
+  SignalsObj extends Record<string, SignalSubType>,
   ValuesObj extends {
-    [signalName in keyof SignalsObj]?: UnwrapSignal<SignalsObj[keyof SignalsObj]>;
+    [SignalName in keyof SignalsObj]?: UnwrapSignal<SignalsObj[SignalName]>;
   },
 >(
   signalsToUpdate: SignalsObj,
