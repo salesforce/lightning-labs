@@ -1,15 +1,14 @@
 import { describe, expect, test, vi } from 'vitest';
 import { defineState } from '../index.js';
 
-const state = defineState((atom, computed, update, _fromContext) => (...args) => {
-  const arg = args[0];
+const state = defineState((atom, computed, update, _fromContext) => (arg: number) => {
   const count = atom(arg);
   const doubleCount = computed({ count }, ({ count: countValue }) => (countValue as number) * 2);
   const increment = update({ count }, ({ count: countValue }) => ({
-    count: (countValue as number) + 1,
+    count: countValue + 1,
   }));
   const incrementBy = update({ count }, ({ count: countValue }, amount: number) => ({
-    count: (countValue as number) + amount,
+    count: countValue + amount,
   }));
 
   return {
