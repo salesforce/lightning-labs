@@ -13,7 +13,7 @@ import type {
 const atomSetter = Symbol('atomSetter');
 
 class AtomSignal<T> extends SignalBaseClass<T> {
-  _value: T;
+  private _value: T;
 
   constructor(value: T) {
     super();
@@ -34,13 +34,18 @@ class ComputedSignal<T> extends SignalBaseClass<T> {
   private computer: Computer<unknown>;
   private dependencies: Record<string, Signal<unknown>>;
   private _value: T;
+  private isStale = true;
 
   constructor(inputSignalsObj: Record<string, Signal<unknown>>, computer: Computer<unknown>) {
     super();
     this.computer = computer;
     this.dependencies = inputSignalsObj;
 
-    const onUpdate = () => this.notify();
+    const onUpdate = () => {
+      this.isStale = true;
+      this.notify();
+    };
+
     for (const signal of Object.values(inputSignalsObj)) {
       signal.subscribe(onUpdate);
     }
@@ -51,16 +56,17 @@ class ComputedSignal<T> extends SignalBaseClass<T> {
     for (const [signalName, signal] of Object.entries(this.dependencies)) {
       dependencyValues[signalName] = signal.value;
     }
+    this.isStale = false;
     this._value = this.computer(dependencyValues) as T;
   }
 
   protected override notify(): void {
-    this.computeValue();
+    this.isStale = true;
     super.notify();
   }
 
   get value() {
-    if (!this._value) {
+    if (this.isStale) {
       this.computeValue();
     }
     return this._value;
@@ -85,7 +91,7 @@ const update: MakeUpdate = <
   },
 >(
   signalsToUpdate: SignalsObj,
-  updater: Updater,
+  userProvidedUpdaterFn: Updater,
 ) => {
   return (...uniqueArgs: AdditionalArguments) => {
     const signalValues = {} as ValuesObj;
@@ -94,7 +100,7 @@ const update: MakeUpdate = <
       signalValues[signalName as keyof ValuesObj] = signal.value as ValuesObj[keyof ValuesObj];
     }
 
-    const newValues = updater(signalValues, ...uniqueArgs);
+    const newValues = userProvidedUpdaterFn(signalValues, ...uniqueArgs);
 
     for (const [atomName, newValue] of Object.entries(newValues)) {
       signalsToUpdate[atomName][atomSetter](newValue);
@@ -106,21 +112,21 @@ export const defineState: DefineState = (defineStateCallback) => {
   return (...args) => {
     class StateManagerSignal<OuterStateShape> extends SignalBaseClass<OuterStateShape> {
       private internalStateShape: Record<string, Signal<unknown> | ExposedUpdater>;
-      private isNotifyScheduled = false;
       private _value: OuterStateShape;
+      private isStale = true;
 
       constructor() {
         super();
 
-        // @ts-ignore: TODO
+        // @ts-ignore TODO: W-16769884
         const fromContext: MakeContextHook = () => {};
 
         this.internalStateShape = defineStateCallback(atom, computed, update, fromContext)(...args);
 
         for (const signalOrUpdater of Object.values(this.internalStateShape)) {
           if (!isUpdater(signalOrUpdater)) {
-            // Subscribe to changes to exposed state atoms, so that the entire state manager signal
-            // "reacts" when the atoms change.
+            // Subscribe to changes to exposed state atoms and computeds, so that the entire
+            // state manager signal "reacts" when the atoms/computeds change.
             (signalOrUpdater as Signal<unknown>).subscribe(this.scheduledNotify.bind(this));
           }
         }
@@ -137,21 +143,16 @@ export const defineState: DefineState = (defineStateCallback) => {
         );
 
         this._value = Object.freeze(computedValue) as OuterStateShape;
+        this.isStale = false;
       }
 
       private scheduledNotify() {
-        if (!this.isNotifyScheduled) {
-          this.isNotifyScheduled = true;
-          queueMicrotask(() => {
-            this.isNotifyScheduled = false;
-            this.computeValue();
-            this.notify();
-          });
-        }
+        this.isStale = true;
+        super.notify();
       }
 
       get value() {
-        if (!this._value) {
+        if (this.isStale) {
           this.computeValue();
         }
         return this._value;
