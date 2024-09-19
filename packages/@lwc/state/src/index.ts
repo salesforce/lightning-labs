@@ -158,7 +158,7 @@ export const defineState: DefineState = (defineStateCallback) => {
         return this._value;
       }
 
-      // TODO: W-16769884 instances of this class must take the shape of `ContextProvider` and 
+      // TODO: W-16769884 instances of this class must take the shape of `ContextProvider` and
       //       `ContextConsumer` in the same way that it takes the shape/implements `Signal`
     }
 
