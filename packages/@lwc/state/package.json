@@ -1,6 +1,6 @@
 {
   "name": "@lwc/state",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "State management using Signals",
   "repository": {
     "type": "git",
