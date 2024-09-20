@@ -15,13 +15,16 @@ const state = defineState((atom, computed, update, _fromContext) => (...args) =>
   const fruit = atom(fruitArg);
 
   const doubleCount = computed({ count }, ({ count: countValue }) => (countValue as number) * 2);
+  // @ts-ignore
   doubleCountNotifySpy = vi.spyOn(doubleCount, 'notify');
 
   const fruitNameAndCount = computed(
     { fruit, count },
     ({ fruit, count }) => `I have ${count} ${fruit}${(count as number) > 1 ? 's' : ''}`,
   );
+  // @ts-ignore
   fruitNameAndCountNotifySpy = vi.spyOn(fruitNameAndCount, 'notify');
+  // @ts-ignore
   fruitNameAndCountComputeValueSpy = vi.spyOn(fruitNameAndCount, 'computeValue');
 
   const increment = update({ count }, ({ count: countValue }) => ({
