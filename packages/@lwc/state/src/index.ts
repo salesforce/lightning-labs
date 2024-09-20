@@ -149,7 +149,6 @@ export const defineState: DefineState = (defineStateCallback) => {
 
       private scheduledNotify() {
         this.isStale = true;
-        // super.notify();
 
         if (!this.isNotifyScheduled) {
           queueMicrotask(() => {
@@ -171,7 +170,6 @@ export const defineState: DefineState = (defineStateCallback) => {
       // TODO: W-16769884 instances of this class must take the shape of `ContextProvider` and
       //       `ContextConsumer` in the same way that it takes the shape/implements `Signal`
     }
-
     return new StateManagerSignal();
   };
 };
