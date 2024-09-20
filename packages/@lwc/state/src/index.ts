@@ -114,6 +114,7 @@ export const defineState: DefineState = (defineStateCallback) => {
       private internalStateShape: Record<string, Signal<unknown> | ExposedUpdater>;
       private _value: OuterStateShape;
       private isStale = true;
+      private isNotifyScheduled = false;
 
       constructor() {
         super();
@@ -148,7 +149,16 @@ export const defineState: DefineState = (defineStateCallback) => {
 
       private scheduledNotify() {
         this.isStale = true;
-        super.notify();
+        // super.notify();
+
+        if (!this.isNotifyScheduled) {
+          queueMicrotask(() => {
+            this.isNotifyScheduled = false;
+            super.notify();
+          });
+
+          this.isNotifyScheduled = true;
+        }
       }
 
       get value() {
