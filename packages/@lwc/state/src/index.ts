@@ -114,6 +114,7 @@ export const defineState: DefineState = (defineStateCallback) => {
       private internalStateShape: Record<string, Signal<unknown> | ExposedUpdater>;
       private _value: OuterStateShape;
       private isStale = true;
+      private isNotifyScheduled = false;
 
       constructor() {
         super();
@@ -148,7 +149,15 @@ export const defineState: DefineState = (defineStateCallback) => {
 
       private scheduledNotify() {
         this.isStale = true;
-        super.notify();
+
+        if (!this.isNotifyScheduled) {
+          queueMicrotask(() => {
+            this.isNotifyScheduled = false;
+            super.notify();
+          });
+
+          this.isNotifyScheduled = true;
+        }
       }
 
       get value() {
@@ -161,7 +170,6 @@ export const defineState: DefineState = (defineStateCallback) => {
       // TODO: W-16769884 instances of this class must take the shape of `ContextProvider` and
       //       `ContextConsumer` in the same way that it takes the shape/implements `Signal`
     }
-
     return new StateManagerSignal();
   };
 };
