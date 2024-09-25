@@ -9,6 +9,7 @@ import type {
   ExposedUpdater,
   DefineState,
 } from './types.ts';
+import { V } from 'vitest/dist/chunks/reporters.WnPwkmgA.js';
 
 const atomSetter = Symbol('atomSetter');
 
@@ -73,6 +74,24 @@ class ComputedSignal<T> extends SignalBaseClass<T> {
   }
 }
 
+class ContextSignal<T> extends SignalBaseClass<T> {
+  private _value: T;
+
+  constructor(value: T) {
+    super();
+    this._value = value;
+  }
+
+  get value() {
+    return this._value;
+  }
+
+  set value(value: T) {
+    this._value = value;
+    this.notify();
+  }
+}
+
 const isUpdater = (signalOrUpdater: Signal<unknown> | ExposedUpdater) =>
   typeof signalOrUpdater === 'function';
 
@@ -115,6 +134,7 @@ export const defineState: DefineState = (defineStateCallback) => {
       private _value: OuterStateShape;
       private isStale = true;
       private isNotifyScheduled = false;
+      private contextMap = new Map<symbol, ContextSignal<unknown>>();
 
       constructor() {
         super();
@@ -167,9 +187,46 @@ export const defineState: DefineState = (defineStateCallback) => {
         return this._value;
       }
 
+      provide(key: string, initialValue: unknown): ContextSignal<unknown> {
+        const contextSignal = new ContextSignal(initialValue);
+        this.contextMap.set(Symbol.for(key), contextSignal);
+
+        return contextSignal;
+      }
+
+      inject(key: string) {
+        const symbolKey = Symbol.for(key);
+        // Check for Provider to be present in the component hierarchy
+        // else return undefined
+
+        if (this.contextMap.has(symbolKey)) {
+          const contextSignal = this.contextMap.get(symbolKey);
+
+          // would this work with LWC reactivity?
+          return new Proxy(contextSignal, {
+            set(_target, prop) {
+              // Should we just throw in all cases?
+              if (prop === 'value') {
+                throw new Error('Setting value in Consumer is not allowed.');
+              }
+            },
+          });
+        }
+      }
+
       // TODO: W-16769884 instances of this class must take the shape of `ContextProvider` and
       //       `ContextConsumer` in the same way that it takes the shape/implements `Signal`
     }
-    return new StateManagerSignal();
+    const sms = new StateManagerSignal();
+    // return new StateManagerSignal();
+
+    return {
+      get value() {
+        return sms.value;
+      },
+      subscribe: sms.subscribe.bind(sms),
+      provide: sms.provide.bind(sms),
+      inject: sms.inject.bind(sms),
+    };
   };
 };

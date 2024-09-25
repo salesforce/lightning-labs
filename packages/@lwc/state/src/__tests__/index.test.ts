@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeAll, describe, expect, test, vi } from 'vitest';
 import { defineState } from '../index.js';
 // biome-ignore lint: test only
 let doubleCountNotifySpy: any;
@@ -197,5 +197,43 @@ describe('state manager', () => {
 
     expect(s.value.count).toBe(6);
     expect(s.value.fruitNameAndCount).toBe('I have 6 Grapes');
+  });
+});
+
+describe.only('context', () => {
+  // biome-ignore lint: test only
+  let contextState: any;
+
+  beforeAll(() => {
+    contextState = defineState(() => () => ({}));
+  });
+
+  test('should be able to provide/inject context', () => {
+    const s = contextState();
+    const sub = vi.fn();
+    const contextProvider = s.provide('context', 'foo');
+    const contextConsumer = s.inject('context');
+    contextConsumer.subscribe(sub);
+
+    expect(contextConsumer.value).toBe('foo');
+    contextProvider.value = 'bar';
+    expect(contextConsumer.value).toBe('bar');
+    expect(sub).toHaveBeenCalledOnce();
+  });
+
+  test('should not be able to mutate in context consumer', () => {
+    const s = contextState();
+    const contextProvider = s.provide('context', 'foo');
+    const contextConsumer = s.inject('context');
+    expect(() => {
+      contextConsumer.value = 'bar';
+    }).toThrowError('Setting value in Consumer is not allowed');
+  });
+
+  test('should return undefined when no provider is present', () => {
+    const s = contextState();
+    const contextConsumer = s.inject('context');
+
+    expect(contextConsumer).toBeUndefined();
   });
 });
