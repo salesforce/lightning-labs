@@ -195,6 +195,7 @@ export const defineState: DefineState = (defineStateCallback) => {
       }
 
       inject(key: string) {
+        // Should be use a guid map instead?
         const symbolKey = Symbol.for(key);
         // Check for Provider to be present in the component hierarchy
         // else return undefined
@@ -202,13 +203,14 @@ export const defineState: DefineState = (defineStateCallback) => {
         if (this.contextMap.has(symbolKey)) {
           const contextSignal = this.contextMap.get(symbolKey);
 
-          // would this work with LWC reactivity?
+          // TODO: do Proxies work with LWC reactivity?
           return new Proxy(contextSignal, {
-            set(_target, prop) {
+            set(_target, prop, _newValue) {
               // Should we just throw in all cases?
               if (prop === 'value') {
                 throw new Error('Setting value in Consumer is not allowed.');
               }
+              return false;
             },
           });
         }
@@ -220,13 +222,25 @@ export const defineState: DefineState = (defineStateCallback) => {
     const sms = new StateManagerSignal();
     // return new StateManagerSignal();
 
-    return {
-      get value() {
-        return sms.value;
+    return Object.create(null, {
+      value: {
+        get() {
+          return sms.value;
+        },
+        enumerable: true,
       },
-      subscribe: sms.subscribe.bind(sms),
-      provide: sms.provide.bind(sms),
-      inject: sms.inject.bind(sms),
-    };
+      subscribe: {
+        value: sms.subscribe.bind(sms),
+        enumerable: true,
+      },
+      provide: {
+        value: sms.provide.bind(sms),
+        enumerable: true,
+      },
+      inject: {
+        value: sms.inject.bind(sms),
+        enumerable: true,
+      },
+    });
   };
 };

@@ -200,7 +200,7 @@ describe('state manager', () => {
   });
 });
 
-describe.only('context', () => {
+describe('context', () => {
   // biome-ignore lint: test only
   let contextState: any;
 
