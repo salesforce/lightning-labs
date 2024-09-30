@@ -9,6 +9,7 @@ import type {
   ExposedUpdater,
   DefineState,
 } from './types.ts';
+import type { LightningElement } from 'lwc';
 
 const atomSetter = Symbol('atomSetter');
 
@@ -108,6 +109,22 @@ const update: MakeUpdate = <
   };
 };
 
+class ContextRequestEvent extends CustomEvent<{
+  key: string;
+  callback: (value: unknown) => void;
+}> {
+  static readonly EVENT_NAME = 'context-request';
+  readonly key: string;
+  readonly callback: (value: unknown) => void;
+
+  constructor(detail: { key: unknown; callback: (value: unknown) => void }) {
+    super(ContextRequestEvent.EVENT_NAME, { bubbles: true, composed: true });
+    // using strings for now until we have a better type for the context key
+    this.key = detail.key as string;
+    this.callback = detail.callback;
+  }
+}
+
 export const defineState: DefineState = (defineStateCallback) => {
   return (...args) => {
     class StateManagerSignal<OuterStateShape> extends SignalBaseClass<OuterStateShape> {
@@ -115,32 +132,87 @@ export const defineState: DefineState = (defineStateCallback) => {
       private _value: OuterStateShape;
       private isStale = true;
       private isNotifyScheduled = false;
+      private _element: WeakRef<LightningElement | HTMLElement>;
 
-      constructor() {
+      constructor(hostElement?: LightningElement | HTMLElement) {
         super();
+        this._element = hostElement ? new WeakRef(hostElement) : undefined;
 
-        // @ts-ignore TODO: W-16769884
-        const fromContext: MakeContextHook = () => {};
+        const fromContext: any = (stateDef) => {
+          const context = this.injectContext(stateDef);
+          // Return the context signal
+          return context;
+        };
 
         this.internalStateShape = defineStateCallback(atom, computed, update, fromContext)(...args);
 
         for (const signalOrUpdater of Object.values(this.internalStateShape)) {
-          if (!isUpdater(signalOrUpdater)) {
+          if (signalOrUpdater && !isUpdater(signalOrUpdater)) {
             // Subscribe to changes to exposed state atoms and computeds, so that the entire
             // state manager signal "reacts" when the atoms/computeds change.
             (signalOrUpdater as Signal<unknown>).subscribe(this.scheduledNotify.bind(this));
           }
         }
+
+        // ToDo: need to provide proper key
+        this.provideContext('context');
+      }
+
+      private provideContext(key: unknown) {
+        const element = this._element?.deref();
+        if (!element || !element.addEventListener) {
+          return;
+        }
+        // we are attached to an element and can provide a context value
+        element.addEventListener(ContextRequestEvent.EVENT_NAME, (event: ContextRequestEvent) => {
+          // event.target !== element.getHostElement() \\ element.hostElement
+          if (event.key === key) {
+            // ToDo: We need to return a "shareable" signal here
+            // meaning only share atoms, computeds and not updaters
+            event.stopPropagation();
+            event.callback(this);
+          }
+        });
+      }
+
+      private injectContext(key: unknown): AtomSignal<unknown> | undefined {
+        let contextInjected = false;
+        const element = this._element?.deref();
+        if (!element || !element.dispatchEvent) {
+          return undefined;
+        }
+        // we are attached to and element, so we can dispatch a custom event
+        // to the parent element to fetch the context value
+        // Create an Atom signal to hold the context value
+        // so that the value is immutable by the user
+        const contextValue = new AtomSignal<unknown>(undefined);
+
+        const contextRequestEvent = new ContextRequestEvent({
+          key,
+          callback: (value: unknown) => {
+            // the value is a signal, so we need to subscribe to it
+            contextInjected = true;
+            contextValue[atomSetter](value);
+          },
+        });
+
+        // ToDo: We can dispatch an event but there might not be any takers
+        // so we need to handle that case as well
+        element.dispatchEvent(contextRequestEvent);
+
+        return contextInjected ? contextValue : undefined;
       }
 
       private computeValue() {
         const computedValue = Object.fromEntries(
-          Object.entries(this.internalStateShape).map(([key, signalOrUpdater]) => {
-            if (isUpdater(signalOrUpdater)) {
-              return [key, signalOrUpdater];
-            }
-            return [key, signalOrUpdater.value];
-          }),
+          Object.entries(this.internalStateShape)
+            .filter(([, signalOrUpdater]) => signalOrUpdater)
+            .map(([key, signalOrUpdater]) => {
+              if (isUpdater(signalOrUpdater)) {
+                return [key, signalOrUpdater];
+              }
+              return [key, signalOrUpdater.value];
+            }),
         );
 
         this._value = Object.freeze(computedValue) as OuterStateShape;
@@ -169,6 +241,10 @@ export const defineState: DefineState = (defineStateCallback) => {
 
       // TODO: W-16769884 instances of this class must take the shape of `ContextProvider` and
       //       `ContextConsumer` in the same way that it takes the shape/implements `Signal`
+    }
+    // Check if the first argument is likely a LightningElement
+    if (args[0] && typeof args[0] === 'object' && 'template' in args[0] && 'render' in args[0]) {
+      return new StateManagerSignal(args[0] as unknown as LightningElement);
     }
     return new StateManagerSignal();
   };
