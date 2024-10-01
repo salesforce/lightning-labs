@@ -125,13 +125,13 @@ class ContextRequestEvent extends CustomEvent<{
   }
 }
 
-class ContextProvider<SomeSignal extends AtomSignal<unknown>> {
+class ContextProvider<T, StateSignal extends SignalBaseClass<T>> {
   static readonly CONTEXT_KEY = 'context';
   private readonly hostElement: WeakRef<LightningElement | HTMLElement>;
   private readonly callbacks = new WeakSet<(value: unknown) => void>();
-  private readonly contextValue: SomeSignal;
+  private readonly contextValue: StateSignal;
 
-  constructor(hostElement: LightningElement | HTMLElement, contextValue: SomeSignal) {
+  constructor(hostElement: LightningElement | HTMLElement, contextValue: any) {
     this.hostElement = new WeakRef(hostElement);
     this.contextValue = contextValue;
     this.hostElement.deref().addEventListener(ContextRequestEvent.EVENT_NAME, this.contextEventListener);
@@ -148,18 +148,18 @@ class ContextProvider<SomeSignal extends AtomSignal<unknown>> {
   }
 }
 
-class ContextConsumer<SomeSignal extends AtomSignal<unknown>> {
+class ContextConsumer<T, StateSignal extends SignalBaseClass<T>> {
   static readonly CONTEXT_KEY = 'context';
   private readonly hostElement: WeakRef<LightningElement | HTMLElement>;
   public contextInjected: boolean = false;
-  public contextValue: SomeSignal;
+  public contextValue: StateSignal;
 
   constructor(hostElement: LightningElement | HTMLElement) {
     this.hostElement = new WeakRef(hostElement);
     this.hostElement.deref().dispatchEvent(this.contextEventDispatcher())
   }
 
-  private callback(value: SomeSignal) {
+  private callback(value: StateSignal) {
     this.contextInjected = true;
     this.contextValue = value;
   }
@@ -179,15 +179,15 @@ export const defineState: DefineState = (defineStateCallback) => {
       private _value: OuterStateShape;
       private isStale = true;
       private isNotifyScheduled = false;
-      private contextProvider: ContextProvider<AtomSignal<unknown>>;
-      private contextConsumer: ContextConsumer<AtomSignal<unknown>>;
+      private contextProvider: ContextProvider<OuterStateShape, StateManagerSignal<OuterStateShape>>;
+      private contextConsumer: ContextConsumer<OuterStateShape, StateManagerSignal<OuterStateShape>>;
 
       constructor(hostElement?: LightningElement | HTMLElement) {
         super();
         // Ordering is important here. We need to create the context consumer before
         // we call any client side code that may need to consume the context.
         if (hostElement) {
-          this.contextConsumer = new ContextConsumer<AtomSignal<unknown>>(hostElement);
+          this.contextConsumer = new ContextConsumer(hostElement);
         }
 
         const fromContext: any = (_stateDef) => {
@@ -205,10 +205,8 @@ export const defineState: DefineState = (defineStateCallback) => {
         }
 
         // ToDo: need to provide proper key
-        // this.provideContext('context');
         if (hostElement) {
-          const contextValue = new AtomSignal<unknown>(this.value);
-          this.contextProvider = new ContextProvider<AtomSignal<unknown>>(hostElement, contextValue);
+          this.contextProvider = new ContextProvider(hostElement, this);
         }
       }
 
@@ -217,7 +215,8 @@ export const defineState: DefineState = (defineStateCallback) => {
           Object.entries(this.internalStateShape)
             .filter(([, signalOrUpdater]) => signalOrUpdater)
             .map(([key, signalOrUpdater]) => {
-              if (isUpdater(signalOrUpdater)) {
+              // ToDo: need a better way to identify context
+              if (isUpdater(signalOrUpdater) || key === ContextConsumer.CONTEXT_KEY) {
                 return [key, signalOrUpdater];
               }
               return [key, signalOrUpdater.value];

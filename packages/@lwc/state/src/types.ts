@@ -30,7 +30,7 @@ export type MakeUpdate = <
   mutator: (signalValues: Values, ...mutatorArgs: MutatorArgs) => Values,
 ) => (...mutatorArgs: MutatorArgs) => void;
 
-export type MakeContextHook = <T, StateDef extends () => Signal<T>>(
+export type MakeContextHook<T> = <StateDef extends () => Signal<T>>(
   stateDef: StateDef,
 ) => Signal<T>;
 
@@ -42,11 +42,12 @@ export type DefineState = <
     readonly [SignalName in keyof InnerStateShape]: UnwrapSignal<InnerStateShape[SignalName]>;
   },
   Args extends unknown[],
+  ContextShape,
 >(
   defineStateCb: (
     atom: MakeAtom,
     computed: MakeComputed,
     update: MakeUpdate,
-    fromContext: MakeContextHook,
+    fromContext: MakeContextHook<ContextShape>,
   ) => (...args: Args) => InnerStateShape,
 ) => (...args: Args) => Signal<OuterStateShape>;
