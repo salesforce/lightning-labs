@@ -206,7 +206,21 @@ export const defineState: DefineState = (defineStateCallback) => {
 
         // ToDo: need to provide proper key
         if (hostElement) {
-          this.contextProvider = new ContextProvider(hostElement, this);
+          const stateManagerSignalInstance = this;
+          const shareableContext = {
+            get value() {
+              const valueWithUpdaters = stateManagerSignalInstance.value;
+
+              return Object.fromEntries(Object.entries(valueWithUpdaters).map(([key, valueOrUpdater]) => {
+                if (!isUpdater(valueOrUpdater as any)) {
+                  return [key, valueOrUpdater];
+                }
+              }).filter((entry): entry is [string, unknown] => entry !== undefined));
+            },
+            subscribe: stateManagerSignalInstance.subscribe.bind(stateManagerSignalInstance)
+          }
+
+          this.contextProvider = new ContextProvider(hostElement, shareableContext);
         }
       }
 
