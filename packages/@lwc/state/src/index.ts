@@ -120,11 +120,14 @@ export const defineState: DefineState = (defineStateCallback) => {
       private contextProvider: ContextProvider<OuterStateShape, StateManagerSignal<OuterStateShape>>;
       private contextConsumer: ContextConsumer<OuterStateShape, StateManagerSignal<OuterStateShape>>;
       private host: WeakRef<LightningElement>;
+      // The only reason we use a Set is because WeakSet doesn't allow iteration 
+      private contextCallbacks = new Set<(context: unknown) => void>();
 
       constructor() {
         super();
-        const fromContext: any = (_stateDef) => {
-          return this.contextConsumer?.contextValue || undefined;
+
+        const fromContext: any = (callback: (context: OuterStateShape) => void) => {
+          this.contextCallbacks.add(callback);
         };
 
         this.internalStateShape = defineStateCallback(atom, computed, update, fromContext)(...args);
@@ -140,23 +143,29 @@ export const defineState: DefineState = (defineStateCallback) => {
 
       public connect(hostElement: LightningElement) {
         // Check if this is likely a LightningElement
-        // is duck-typing the only way since Locker provides it's own implementation of `LightningElement`
-        if (hostElement && typeof hostElement === 'object' && 'template' in hostElement && 'render' in hostElement) {
-          this.host = new WeakRef(hostElement);
-        } else {
-          throw new Error(`Only LightningElements are supported as hosts`)
+        // is duck-typing the only way since Locker provides it's own implementation of `LightningElement` ?
+        if (!hostElement || 
+          typeof hostElement !== 'object' || 
+          !('template' in hostElement) || 
+          !('render' in hostElement)) {
+            throw new Error(`Only LightningElements are supported as hosts`)
+        }
+
+        this.host = new WeakRef(hostElement);
+        
+        if (this.contextCallbacks.size > 0) {
+          this.contextConsumer = new ContextConsumer(hostElement);
+        }
+
+        for (const callback of this.contextCallbacks) {
+          callback(this.contextConsumer.contextValue || undefined);
         }
       }
 
-      public provide() {
-        const host = this.host && this.host.deref();
-
-        if (!host) {
-          throw new Error(`Connect to a host element by calling 'connect(elem)' before providing context.`);
-        }
-
+      private shareableContext() {
         const stateManagerSignalInstance = this;
-        const shareableContext = {
+
+        return {
           get value() {
             const valueWithUpdaters = stateManagerSignalInstance.value;
 
@@ -167,9 +176,17 @@ export const defineState: DefineState = (defineStateCallback) => {
             }).filter((entry): entry is [string, unknown] => entry !== undefined)));
           },
           subscribe: stateManagerSignalInstance.subscribe.bind(stateManagerSignalInstance)
+        };
+      }
+
+      public provide() {
+        const host = this.host && this.host.deref();
+
+        if (!host) {
+          throw new Error(`Connect to a host element by calling 'connect(elem)' before providing context.`);
         }
 
-        this.contextProvider = new ContextProvider(host, shareableContext);
+        this.contextProvider = new ContextProvider(host, this.shareableContext());
       }
 
       public inject() {
@@ -178,8 +195,11 @@ export const defineState: DefineState = (defineStateCallback) => {
         if (!host) {
           throw new Error(`Connect to a host element by calling 'connect(elem)' before injecting context.`);
         }
+        
+        if (!this.contextConsumer) {
+          this.contextConsumer = new ContextConsumer(host);
+        }
 
-        this.contextConsumer = new ContextConsumer(host);
         return this.contextConsumer?.contextValue || undefined;
       }
 
