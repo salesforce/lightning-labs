@@ -117,15 +117,24 @@ export const defineState: DefineState = (defineStateCallback) => {
       private _value: OuterStateShape;
       private isStale = true;
       private isNotifyScheduled = false;
-      private contextProvider: ContextProvider<OuterStateShape, StateManagerSignal<OuterStateShape>>;
-      private contextConsumer: ContextConsumer<OuterStateShape, StateManagerSignal<OuterStateShape>>;
+      private contextProvider: ContextProvider<
+        OuterStateShape,
+        StateManagerSignal<OuterStateShape>
+      >;
+      private contextConsumer: ContextConsumer<
+        OuterStateShape,
+        StateManagerSignal<OuterStateShape>
+      >;
       private host: WeakRef<LightningElement>;
-      // The only reason we use a Set is because WeakSet doesn't allow iteration 
+      // The only reason we use a Set is because WeakSet doesn't allow iteration
       private contextCallbacks = new Set<(context: unknown) => void>();
 
       constructor() {
         super();
 
+        // Look into changing this to a Signal so that we can avoid using `any`
+        // and the value can be reactive instead of the callback approach
+        // biome-ignore lint: allow for now
         const fromContext: any = (callback: (context: OuterStateShape) => void) => {
           this.contextCallbacks.add(callback);
         };
@@ -144,15 +153,17 @@ export const defineState: DefineState = (defineStateCallback) => {
       public connect(hostElement: LightningElement) {
         // Check if this is likely a LightningElement
         // is duck-typing the only way since Locker provides it's own implementation of `LightningElement` ?
-        if (!hostElement || 
-          typeof hostElement !== 'object' || 
-          !('template' in hostElement) || 
-          !('render' in hostElement)) {
-            throw new Error(`Only LightningElements are supported as hosts`)
+        if (
+          !hostElement ||
+          typeof hostElement !== 'object' ||
+          !('template' in hostElement) ||
+          !('render' in hostElement)
+        ) {
+          throw new Error('Only LightningElements are supported as hosts');
         }
 
         this.host = new WeakRef(hostElement);
-        
+
         if (this.contextCallbacks.size > 0) {
           this.contextConsumer = new ContextConsumer(hostElement);
         }
@@ -169,33 +180,44 @@ export const defineState: DefineState = (defineStateCallback) => {
           get value() {
             const valueWithUpdaters = stateManagerSignalInstance.value;
 
-            return Object.freeze(Object.fromEntries(Object.entries(valueWithUpdaters).map(([key, valueOrUpdater]) => {
-              if (!isUpdater(valueOrUpdater as any)) {
-                return [key, valueOrUpdater];
-              }
-            }).filter((entry): entry is [string, unknown] => entry !== undefined)));
+            return Object.freeze(
+              Object.fromEntries(
+                Object.entries(valueWithUpdaters)
+                  .map(([key, valueOrUpdater]) => {
+                    if (!isUpdater(valueOrUpdater)) {
+                      return [key, valueOrUpdater];
+                    }
+                  })
+                  .filter((entry): entry is [string, unknown] => entry !== undefined),
+              ),
+            );
           },
-          subscribe: stateManagerSignalInstance.subscribe.bind(stateManagerSignalInstance)
+          subscribe: stateManagerSignalInstance.subscribe.bind(stateManagerSignalInstance),
         };
       }
 
       public provide() {
-        const host = this.host && this.host.deref();
+        const host = this.host?.deref();
 
         if (!host) {
-          throw new Error(`Connect to a host element by calling 'connect(elem)' before providing context.`);
+          throw new Error(
+            `Connect to a host element by calling 'connect(elem)' before providing context.`,
+          );
         }
 
-        this.contextProvider = new ContextProvider(host, this.shareableContext());
+        // biome-ignore lint: allow for now
+        this.contextProvider = new ContextProvider(host, this.shareableContext() as any);
       }
 
       public inject() {
-        const host = this.host && this.host.deref();
+        const host = this.host?.deref();
 
         if (!host) {
-          throw new Error(`Connect to a host element by calling 'connect(elem)' before injecting context.`);
+          throw new Error(
+            `Connect to a host element by calling 'connect(elem)' before injecting context.`,
+          );
         }
-        
+
         if (!this.contextConsumer) {
           this.contextConsumer = new ContextConsumer(host);
         }
