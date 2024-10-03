@@ -10,6 +10,7 @@ import type {
   DefineState,
 } from './types.ts';
 import type { LightningElement } from 'lwc';
+import { ContextConsumer, ContextProvider } from './context.js';
 
 const atomSetter = Symbol('atomSetter');
 
@@ -109,69 +110,6 @@ const update: MakeUpdate = <
   };
 };
 
-class ContextRequestEvent extends CustomEvent<{
-  key: string;
-  callback: (value: unknown) => void;
-}> {
-  static readonly EVENT_NAME = 'context-request';
-  readonly key: string;
-  readonly callback: (value: unknown) => void;
-
-  constructor(detail: { key: unknown; callback: (value: unknown) => void }) {
-    super(ContextRequestEvent.EVENT_NAME, { bubbles: true, composed: true });
-    // using strings for now until we have a better type for the context key
-    this.key = detail.key as string;
-    this.callback = detail.callback;
-  }
-}
-
-class ContextProvider<T, StateSignal extends SignalBaseClass<T>> {
-  static readonly CONTEXT_KEY = 'context';
-  private readonly hostElement: WeakRef<LightningElement | HTMLElement>;
-  private readonly callbacks = new WeakSet<(value: unknown) => void>();
-  private readonly contextValue: StateSignal;
-
-  constructor(hostElement: LightningElement | HTMLElement, contextValue: any) {
-    this.hostElement = new WeakRef(hostElement);
-    this.contextValue = contextValue;
-    this.hostElement.deref().addEventListener(ContextRequestEvent.EVENT_NAME, this.contextEventListener);
-  }
-
-  private contextEventListener = (event: ContextRequestEvent) => {
-    const { key, callback } = event;
-    // Only provide the context if it's the first time the callback is being called
-    if (key === ContextProvider.CONTEXT_KEY && !this.callbacks.has(callback)) {
-      event.stopPropagation();
-      this.callbacks.add(callback);
-      callback(this.contextValue);
-    }
-  }
-}
-
-class ContextConsumer<T, StateSignal extends SignalBaseClass<T>> {
-  static readonly CONTEXT_KEY = 'context';
-  private readonly hostElement: WeakRef<LightningElement | HTMLElement>;
-  public contextInjected: boolean = false;
-  public contextValue: StateSignal;
-
-  constructor(hostElement: LightningElement | HTMLElement) {
-    this.hostElement = new WeakRef(hostElement);
-    this.hostElement.deref().dispatchEvent(this.contextEventDispatcher())
-  }
-
-  private callback(value: StateSignal) {
-    this.contextInjected = true;
-    this.contextValue = value;
-  }
-
-  private contextEventDispatcher() {
-    return new ContextRequestEvent({
-      key: ContextConsumer.CONTEXT_KEY,
-      callback: this.callback.bind(this)
-    });
-  }
-}
-
 export const defineState: DefineState = (defineStateCallback) => {
   return (...args) => {
     class StateManagerSignal<OuterStateShape> extends SignalBaseClass<OuterStateShape> {
@@ -181,15 +119,10 @@ export const defineState: DefineState = (defineStateCallback) => {
       private isNotifyScheduled = false;
       private contextProvider: ContextProvider<OuterStateShape, StateManagerSignal<OuterStateShape>>;
       private contextConsumer: ContextConsumer<OuterStateShape, StateManagerSignal<OuterStateShape>>;
+      private host: WeakRef<LightningElement>;
 
-      constructor(hostElement?: LightningElement | HTMLElement) {
+      constructor() {
         super();
-        // Ordering is important here. We need to create the context consumer before
-        // we call any client side code that may need to consume the context.
-        if (hostElement) {
-          this.contextConsumer = new ContextConsumer(hostElement);
-        }
-
         const fromContext: any = (_stateDef) => {
           return this.contextConsumer?.contextValue || undefined;
         };
@@ -203,25 +136,51 @@ export const defineState: DefineState = (defineStateCallback) => {
             (signalOrUpdater as Signal<unknown>).subscribe(this.scheduledNotify.bind(this));
           }
         }
+      }
 
-        // ToDo: need to provide proper key
-        if (hostElement) {
-          const stateManagerSignalInstance = this;
-          const shareableContext = {
-            get value() {
-              const valueWithUpdaters = stateManagerSignalInstance.value;
-
-              return Object.fromEntries(Object.entries(valueWithUpdaters).map(([key, valueOrUpdater]) => {
-                if (!isUpdater(valueOrUpdater as any)) {
-                  return [key, valueOrUpdater];
-                }
-              }).filter((entry): entry is [string, unknown] => entry !== undefined));
-            },
-            subscribe: stateManagerSignalInstance.subscribe.bind(stateManagerSignalInstance)
-          }
-
-          this.contextProvider = new ContextProvider(hostElement, shareableContext);
+      public connect(hostElement: LightningElement) {
+        // Check if this is likely a LightningElement
+        // is duck-typing the only way since Locker provides it's own implementation of `LightningElement`
+        if (hostElement && typeof hostElement === 'object' && 'template' in hostElement && 'render' in hostElement) {
+          this.host = new WeakRef(hostElement);
+        } else {
+          throw new Error(`Only LightningElements are supported as hosts`)
         }
+      }
+
+      public provide() {
+        const host = this.host && this.host.deref();
+
+        if (!host) {
+          throw new Error(`Connect to a host element by calling 'connect(elem)' before providing context.`);
+        }
+
+        const stateManagerSignalInstance = this;
+        const shareableContext = {
+          get value() {
+            const valueWithUpdaters = stateManagerSignalInstance.value;
+
+            return Object.freeze(Object.fromEntries(Object.entries(valueWithUpdaters).map(([key, valueOrUpdater]) => {
+              if (!isUpdater(valueOrUpdater as any)) {
+                return [key, valueOrUpdater];
+              }
+            }).filter((entry): entry is [string, unknown] => entry !== undefined)));
+          },
+          subscribe: stateManagerSignalInstance.subscribe.bind(stateManagerSignalInstance)
+        }
+
+        this.contextProvider = new ContextProvider(host, shareableContext);
+      }
+
+      public inject() {
+        const host = this.host && this.host.deref();
+
+        if (!host) {
+          throw new Error(`Connect to a host element by calling 'connect(elem)' before injecting context.`);
+        }
+
+        this.contextConsumer = new ContextConsumer(host);
+        return this.contextConsumer?.contextValue || undefined;
       }
 
       private computeValue() {
@@ -263,11 +222,6 @@ export const defineState: DefineState = (defineStateCallback) => {
 
       // TODO: W-16769884 instances of this class must take the shape of `ContextProvider` and
       //       `ContextConsumer` in the same way that it takes the shape/implements `Signal`
-    }
-    // Check if the first argument is likely a LightningElement
-    // is duck-typing the only way since Locker provides it's own implementation of `LightningElement`
-    if (args[0] && typeof args[0] === 'object' && 'template' in args[0] && 'render' in args[0]) {
-      return new StateManagerSignal(args[0] as unknown as LightningElement);
     }
     return new StateManagerSignal();
   };
