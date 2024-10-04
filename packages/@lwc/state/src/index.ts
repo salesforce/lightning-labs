@@ -1,5 +1,6 @@
 import { type Signal, SignalBaseClass } from '@lwc/signals';
 import type {
+  ContextSignal,
   Computer,
   UnwrapSignal,
   MakeAtom,
@@ -13,6 +14,7 @@ import type { LightningElement } from 'lwc';
 import { ContextConsumer, ContextProvider } from './context.js';
 
 const atomSetter = Symbol('atomSetter');
+const contextID = Symbol('contextID');
 
 class AtomSignal<T> extends SignalBaseClass<T> {
   private _value: T;
@@ -117,14 +119,8 @@ export const defineState: DefineState = (defineStateCallback) => {
       private _value: OuterStateShape;
       private isStale = true;
       private isNotifyScheduled = false;
-      private contextProvider: ContextProvider<
-        OuterStateShape,
-        StateManagerSignal<OuterStateShape>
-      >;
-      private contextConsumer: ContextConsumer<
-        OuterStateShape,
-        StateManagerSignal<OuterStateShape>
-      >;
+      private contextProvider: ContextProvider<unknown>;
+      private contextConsumer: ContextConsumer<unknown>;
       private host: WeakRef<LightningElement>;
       // The only reason we use a Set is because WeakSet doesn't allow iteration
       private contextCallbacks = new Set<(context: unknown) => void>();
@@ -132,8 +128,8 @@ export const defineState: DefineState = (defineStateCallback) => {
       constructor() {
         super();
 
-        // Look into changing this to a Signal so that we can avoid using `any`
-        // and the value can be reactive instead of the callback approach
+        // ToDo: Look into changing this to a Signal so that we can avoid using
+        // and the value can be reactive instead of the callback approach.
         // biome-ignore lint: allow for now
         const fromContext: any = (callback: (context: OuterStateShape) => void) => {
           this.contextCallbacks.add(callback);
@@ -164,6 +160,12 @@ export const defineState: DefineState = (defineStateCallback) => {
 
         this.host = new WeakRef(hostElement);
 
+        // This is a slight enhancement to "delay"
+        // connecting the consumer until it's actually needed
+        // A context consumer might live in a:
+        // Component OR in a State Manager.
+        // State Managers consumers will be invoked as soon as the StateManager is connected
+        // but for components, we'll wait until the component requests the context
         if (this.contextCallbacks.size > 0) {
           this.contextConsumer = new ContextConsumer(hostElement);
         }
@@ -173,7 +175,7 @@ export const defineState: DefineState = (defineStateCallback) => {
         }
       }
 
-      private shareableContext() {
+      private shareableContext(): ContextSignal<unknown> {
         const stateManagerSignalInstance = this;
 
         return {
@@ -193,9 +195,12 @@ export const defineState: DefineState = (defineStateCallback) => {
             );
           },
           subscribe: stateManagerSignalInstance.subscribe.bind(stateManagerSignalInstance),
+          id: contextID,
         };
       }
 
+      // If State Manager is connected to a host element
+      // then it can start "providing" it's value as context to any nested components
       public provide() {
         const host = this.host?.deref();
 
@@ -205,11 +210,14 @@ export const defineState: DefineState = (defineStateCallback) => {
           );
         }
 
-        // biome-ignore lint: allow for now
-        this.contextProvider = new ContextProvider(host, this.shareableContext() as any);
+        this.contextProvider = new ContextProvider(host, this.shareableContext());
       }
 
-      public inject() {
+      // If State Manager is connected to a host element
+      // then it can start "injecting" the context available to it
+      // Unlike 'fromContext', this can provide the context to the Components
+      // and StateManagers likewise.
+      public inject(): Signal<unknown> | undefined {
         const host = this.host?.deref();
 
         if (!host) {
@@ -230,8 +238,10 @@ export const defineState: DefineState = (defineStateCallback) => {
           Object.entries(this.internalStateShape)
             .filter(([, signalOrUpdater]) => signalOrUpdater)
             .map(([key, signalOrUpdater]) => {
-              // ToDo: need a better way to identify context
-              if (isUpdater(signalOrUpdater) || key === ContextConsumer.CONTEXT_KEY) {
+              if (
+                isUpdater(signalOrUpdater) ||
+                (signalOrUpdater as ContextSignal<unknown>).id === contextID
+              ) {
                 return [key, signalOrUpdater];
               }
               return [key, signalOrUpdater.value];

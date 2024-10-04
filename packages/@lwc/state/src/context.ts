@@ -1,17 +1,16 @@
-import type { SignalBaseClass } from '@lwc/signals';
+import type { ContextSignal } from './types.ts';
 import type { LightningElement } from 'lwc';
 import { ContextRequestEvent } from './event.js';
 
 // ToDo: Use a symbol or some unique value instead of a string
 const contextKey = 'context';
-
-export class ContextProvider<T, StateSignal extends SignalBaseClass<T>> {
+export class ContextProvider<C> {
   static readonly CONTEXT_KEY = contextKey;
   private readonly hostElement: WeakRef<LightningElement | HTMLElement>;
   private readonly callbacks = new WeakSet<(value: unknown) => void>();
-  private readonly contextValue: StateSignal;
+  private readonly contextValue: ContextSignal<C>;
 
-  constructor(hostElement: LightningElement | HTMLElement, contextValue: StateSignal) {
+  constructor(hostElement: LightningElement | HTMLElement, contextValue: ContextSignal<C>) {
     this.hostElement = new WeakRef(hostElement);
     this.contextValue = contextValue;
     this.hostElement
@@ -30,18 +29,18 @@ export class ContextProvider<T, StateSignal extends SignalBaseClass<T>> {
   };
 }
 
-export class ContextConsumer<T, StateSignal extends SignalBaseClass<T>> {
+export class ContextConsumer<C> {
   static readonly CONTEXT_KEY = contextKey;
   private readonly hostElement: WeakRef<LightningElement | HTMLElement>;
   public contextInjected = false;
-  public contextValue: StateSignal;
+  public contextValue: ContextSignal<C>;
 
   constructor(hostElement: LightningElement | HTMLElement) {
     this.hostElement = new WeakRef(hostElement);
     this.hostElement.deref().dispatchEvent(this.contextEventDispatcher());
   }
 
-  private callback(value: StateSignal) {
+  private callback(value: ContextSignal<C>) {
     this.contextInjected = true;
     this.contextValue = value;
   }

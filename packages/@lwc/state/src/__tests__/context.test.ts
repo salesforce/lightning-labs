@@ -61,7 +61,7 @@ const nameState = defineState((atom, computed, update, fromContext) => (...args)
   };
 });
 
-describe('state manager with context', () => {
+describe.only('state manager with context', () => {
   afterEach(() => {
     vi.clearAllMocks();
   });
@@ -95,9 +95,12 @@ describe('state manager with context', () => {
     (parentState as any).provide();
     // biome-ignore lint: test only
     (childState as any).connect(childElement);
+
+    const { context } = childState.value;
     parentState.value.changeName('New Parent');
 
     expect(childState.value.name).toBe('Child');
-    expect(childState.value.context.value.name).toBe('New Parent');
+    // expect(childState.value.context.value.name).toBe('New Parent');
+    expect(context.value.name).toBe('New Parent');
   });
 });

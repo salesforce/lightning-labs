@@ -36,6 +36,8 @@ export type MakeContextHook<T> = <StateDef extends () => Signal<T>>(
 
 export type ExposedUpdater = (...updaterArgs: unknown[]) => void;
 
+export type ContextSignal<T> = Signal<T> & { id: symbol };
+
 export type DefineState = <
   InnerStateShape extends Record<string, Signal<unknown> | ExposedUpdater>,
   OuterStateShape extends {
