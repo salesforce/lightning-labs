@@ -112,9 +112,13 @@ const update: MakeUpdate = <
   };
 };
 
+interface Something {
+  connect: () => void;
+}
+
 export const defineState: DefineState = (defineStateCallback) => {
   return (...args) => {
-    class StateManagerSignal<OuterStateShape> extends SignalBaseClass<OuterStateShape> {
+    class StateManagerSignal<OuterStateShape> extends SignalBaseClass<OuterStateShape> implements Something {
       private internalStateShape: Record<string, Signal<unknown> | ExposedUpdater>;
       private _value: OuterStateShape;
       private isStale = true;
@@ -124,7 +128,7 @@ export const defineState: DefineState = (defineStateCallback) => {
       // private host: WeakRef<RuntimeElement>;
       // The only reason we use a Set is because WeakSet doesn't allow iteration
       private contextCallbacks = new Set<(context: unknown) => void>();
-      private runtimeAdapterManager: RuntimeAdapterManager;
+      private runtimeAdapterManager: RuntimeAdapterManager<object>;
 
       constructor() {
         super();
@@ -169,6 +173,9 @@ export const defineState: DefineState = (defineStateCallback) => {
           callback(adapter.context);
         }
       }
+
+      // todo: in later PR, add disconnect for when LightningElement (or whatever)
+      // gets disconnected from the DOM (and potentially reconnected later)
 
       private shareableContext(): ContextSignal<unknown> {
         const stateManagerSignalInstance = this;

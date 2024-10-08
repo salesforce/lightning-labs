@@ -1,13 +1,11 @@
 import type { Signal } from '@lwc/signals';
 import type { LightningElement } from 'lwc';
-import type { RuntimeAdapter, RuntimeElement } from './runtime-interface.js';
+import type { RuntimeAdapter } from './runtime-interface.js';
 import { symbolContextKey, ContextRequestEvent } from './event.js';
 
-type LWCRuntimeElement = LightningElement & RuntimeElement;
-
-export class LWCAdapter implements RuntimeAdapter {
+export class LWCAdapter implements RuntimeAdapter<LightningElement> {
   isServerSide = false;
-  element: WeakRef<LWCRuntimeElement>;
+  element: WeakRef<LightningElement>;
   contextSignal: Signal<unknown> | undefined;
   isConsumingContext = false;
 
@@ -18,7 +16,7 @@ export class LWCAdapter implements RuntimeAdapter {
     this.element = this.createWeakRef(element);
   }
 
-  private isValidHostElement(element: unknown): element is LWCRuntimeElement {
+  private isValidHostElement(element: unknown): element is LightningElement {
     return (
       element !== null &&
       typeof element === 'object' &&
