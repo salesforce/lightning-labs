@@ -1,5 +1,6 @@
 import type { Signal } from '@lwc/signals';
-import type { LightningElement } from 'lwc';
+// Remove the LightningElement import
+
 export type UnwrapSignal<T> = T extends Signal<infer Inner> ? Inner : T;
 
 export type MakeAtom = <T>(val: T) => Signal<T>;

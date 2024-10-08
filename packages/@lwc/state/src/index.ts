@@ -10,8 +10,8 @@ import type {
   ExposedUpdater,
   DefineState,
 } from './types.ts';
-import type { LightningElement } from 'lwc';
-import { ContextConsumer, ContextProvider } from './context.js';
+import { type RuntimeAdapter, RuntimeElement, RuntimeAdapterManager } from './runtime-interface.js';
+import { LWCAdapter } from './lwc-adapter.js';
 
 const atomSetter = Symbol('atomSetter');
 const contextID = Symbol('contextID');
@@ -119,11 +119,12 @@ export const defineState: DefineState = (defineStateCallback) => {
       private _value: OuterStateShape;
       private isStale = true;
       private isNotifyScheduled = false;
-      private contextProvider: ContextProvider<unknown>;
-      private contextConsumer: ContextConsumer<unknown>;
-      private host: WeakRef<LightningElement>;
+      // private contextProvider: ContextProvider<unknown>;
+      // private contextConsumer: ContextConsumer<unknown>;
+      // private host: WeakRef<RuntimeElement>;
       // The only reason we use a Set is because WeakSet doesn't allow iteration
       private contextCallbacks = new Set<(context: unknown) => void>();
+      private runtimeAdapterManager: RuntimeAdapterManager;
 
       constructor() {
         super();
@@ -146,19 +147,13 @@ export const defineState: DefineState = (defineStateCallback) => {
         }
       }
 
-      public connect(hostElement: LightningElement) {
-        // Check if this is likely a LightningElement
-        // is duck-typing the only way since Locker provides it's own implementation of `LightningElement` ?
-        if (
-          !hostElement ||
-          typeof hostElement !== 'object' ||
-          !('template' in hostElement) ||
-          !('render' in hostElement)
-        ) {
-          throw new Error('Only LightningElements are supported as hosts');
-        }
+      public connect(hostElement: unknown) {
+        // This bit should move to lwc engine
+        const newAdapter = new LWCAdapter(hostElement);
+        this.setRuntimeAdapter(newAdapter);
+        // End of bit that should move to lwc engine
 
-        this.host = new WeakRef(hostElement);
+        const adapter = this.runtimeAdapterManager.getAdapter();
 
         // This is a slight enhancement to "delay"
         // connecting the consumer until it's actually needed
@@ -167,11 +162,11 @@ export const defineState: DefineState = (defineStateCallback) => {
         // State Managers consumers will be invoked as soon as the StateManager is connected
         // but for components, we'll wait until the component requests the context
         if (this.contextCallbacks.size > 0) {
-          this.contextConsumer = new ContextConsumer(hostElement);
+          adapter.consumeContext();
         }
 
         for (const callback of this.contextCallbacks) {
-          callback(this.contextConsumer.contextValue || undefined);
+          callback(adapter.context);
         }
       }
 
@@ -202,15 +197,15 @@ export const defineState: DefineState = (defineStateCallback) => {
       // If State Manager is connected to a host element
       // then it can start "providing" it's value as context to any nested components
       public provide() {
-        const host = this.host?.deref();
+        const adapter = this.runtimeAdapterManager.getAdapter();
 
-        if (!host) {
+        if (!adapter) {
           throw new Error(
             `Connect to a host element by calling 'connect(elem)' before providing context.`,
           );
         }
 
-        this.contextProvider = new ContextProvider(host, this.shareableContext());
+        adapter.provideContext(this.shareableContext());
       }
 
       // If State Manager is connected to a host element
@@ -218,19 +213,16 @@ export const defineState: DefineState = (defineStateCallback) => {
       // Unlike 'fromContext', this can provide the context to the Components
       // and StateManagers likewise.
       public inject(): Signal<unknown> | undefined {
-        const host = this.host?.deref();
+        const adapter = this.runtimeAdapterManager.getAdapter();
 
-        if (!host) {
+        if (!adapter) {
           throw new Error(
             `Connect to a host element by calling 'connect(elem)' before injecting context.`,
           );
         }
 
-        if (!this.contextConsumer) {
-          this.contextConsumer = new ContextConsumer(host);
-        }
-
-        return this.contextConsumer?.contextValue || undefined;
+        adapter.consumeContext();
+        return adapter.context;
       }
 
       private computeValue() {
@@ -270,6 +262,12 @@ export const defineState: DefineState = (defineStateCallback) => {
           this.computeValue();
         }
         return this._value;
+      }
+
+      // ToDo: Make LWC Engine set the adapter
+      public setRuntimeAdapter(adapter: RuntimeAdapter) {
+        this.runtimeAdapterManager = new RuntimeAdapterManager();
+        this.runtimeAdapterManager.setAdapter(adapter);
       }
 
       // TODO: W-16769884 instances of this class must take the shape of `ContextProvider` and
