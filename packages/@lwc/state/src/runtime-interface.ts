@@ -17,9 +17,6 @@ export class RuntimeAdapterManager<T extends object> {
   }
 
   public getAdapter(): RuntimeAdapter<T> | undefined {
-    if (!this.adapter) {
-      throw new Error('Runtime adapter not set. Call setAdapter before using the library.');
-    }
     return this.adapter;
   }
 }

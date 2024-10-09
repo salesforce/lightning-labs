@@ -14,7 +14,7 @@ import { type RuntimeAdapter, RuntimeAdapterManager } from './runtime-interface.
 import { LWCAdapter } from './lwc-adapter.js';
 
 const atomSetter = Symbol('atomSetter');
-const contextID = Symbol('contextID');
+export const contextID = Symbol('contextID');
 
 export const connectContext = Symbol('connectContext');
 
@@ -136,7 +136,7 @@ export const defineState: DefineState = (defineStateCallback) => {
       private isStale = true;
       private isNotifyScheduled = false;
       private contextCallbacks = new Set<(context: unknown) => void>();
-      private runtimeAdapterManager: RuntimeAdapterManager<object>;
+      private runtimeAdapterManager = new RuntimeAdapterManager();
 
       constructor() {
         super();
@@ -265,7 +265,6 @@ export const defineState: DefineState = (defineStateCallback) => {
       }
 
       set runtimeAdapter(adapter: RuntimeAdapter<object>) {
-        this.runtimeAdapterManager = new RuntimeAdapterManager();
         this.runtimeAdapterManager.setAdapter(adapter);
       }
     }

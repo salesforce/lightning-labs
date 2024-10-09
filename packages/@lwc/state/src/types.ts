@@ -31,9 +31,9 @@ export type MakeUpdate = <
   mutator: (signalValues: Values, ...mutatorArgs: MutatorArgs) => Values,
 ) => (...mutatorArgs: MutatorArgs) => void;
 
-export type MakeContextHook<T> = <StateDef extends (context: T) => void>(
-  callback: StateDef,
-) => Signal<T | undefined>;
+export type MakeContextHook<T> = <StateDef extends () => Signal<T>>(
+  stateDef: StateDef,
+) => Signal<T>;
 
 export type ExposedUpdater = (...updaterArgs: unknown[]) => void;
 
@@ -53,4 +53,6 @@ export type DefineState = <
     update: MakeUpdate,
     fromContext: MakeContextHook<ContextShape>,
   ) => (...args: Args) => InnerStateShape,
-) => (...args: Args) => Signal<OuterStateShape>;
+) => (
+  ...args: Args
+) => Signal<OuterStateShape> & { provide: () => void; inject: () => Signal<unknown> | undefined };
