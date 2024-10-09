@@ -43,6 +43,8 @@ class MockRuntimeAdapter implements RuntimeAdapter<object> {
 
 const mockAdapter = new MockRuntimeAdapter();
 
+const flushMicrotasks = () => Promise.resolve();
+
 // Mock the LWCAdapter
 vi.mock('../lwc-adapter.js', () => {
   return {
@@ -60,7 +62,15 @@ describe('context APIs', () => {
 
     expect(mockAdapter.provideContext).not.toHaveBeenCalled();
     expect(mockAdapter.consumeContext).toHaveBeenCalledTimes(1);
-    expect(childState.value.context).toBe(sharedContext);
+    expect(childState.value.context).toMatchInlineSnapshot(`
+      ContextAtomSignal {
+        "_id": Symbol(contextID),
+        "_value": "context from adapter",
+        "subscribers": Set {
+          [Function],
+        },
+      }
+    `);
   });
 
   test('should throw error when providing context without connecting', () => {
@@ -74,16 +84,25 @@ describe('context APIs', () => {
     parentState.provide();
 
     expect(mockAdapter.provideContext).toHaveBeenCalledTimes(1);
-    expect(mockAdapter.provideContext).toHaveBeenCalledWith(
-      expect.objectContaining({
-        value: expect.any(Object),
-        subscribe: expect.any(Function),
-        id: contextID,
-      }),
-    );
+    expect(mockAdapter.provideContext.mock.calls[0][0]).toMatchInlineSnapshot(`
+      ContextAtomSignal {
+        "_id": Symbol(contextID),
+        "_value": {
+          "context": ContextAtomSignal {
+            "_id": Symbol(contextID),
+            "_value": "context from adapter",
+            "subscribers": Set {
+              [Function],
+            },
+          },
+          "name": "parent",
+        },
+        "subscribers": Set {},
+      }
+    `);
   });
 
-  test('should update provided context when state changes', () => {
+  test('should update provided context when state changes', async () => {
     parentState[connectContext]({});
     parentState.provide();
 
@@ -91,6 +110,7 @@ describe('context APIs', () => {
     expect(providedContext.value.name).toBe('parent');
 
     parentState.value.changeName('newParent');
+    await flushMicrotasks();
     expect(providedContext.value.name).toBe('newParent');
   });
 
@@ -106,7 +126,7 @@ describe('context APIs', () => {
     childState[connectContext]({});
     const injectedContext = childState.inject();
 
-    expect(mockAdapter.consumeContext).toHaveBeenCalledTimes(2);
+    expect(mockAdapter.consumeContext).toHaveBeenCalledTimes(1);
     expect(injectedContext).toBe(sharedContext);
   });
 });

@@ -143,12 +143,21 @@ export const defineState: DefineState = (defineStateCallback) => {
 
         // biome-ignore lint: fix it
         const fromContext: MakeContextHook<any> = <T,>(_otherStateManagerSignal: any) => {
-          const contextAtomSignal = new ContextAtomSignal<Signal<T | undefined> | undefined>(
-            undefined,
-          );
-          this.contextCallbacks.add((context: Signal<T | undefined> | undefined) => {
-            contextAtomSignal[atomSetter](context);
-          });
+          const contextAtomSignal = new ContextAtomSignal<T | undefined>(undefined);
+
+          const onCallback = (context: Signal<T | undefined> | undefined) => {
+            contextAtomSignal[atomSetter](context?.value);
+
+            if (context?.subscribe) {
+              context.subscribe(() => {
+                contextAtomSignal[atomSetter](context?.value);
+              });
+            }
+
+            this.contextCallbacks.delete(onCallback);
+          };
+
+          this.contextCallbacks.add(onCallback);
           return contextAtomSignal;
         };
 
@@ -176,28 +185,26 @@ export const defineState: DefineState = (defineStateCallback) => {
         }
       }
 
-      private shareableContext(): ContextSignal<unknown> {
-        const stateManagerSignalInstance = this;
+      private shareableContext(): ContextAtomSignal<unknown> {
+        const contextAtom = new ContextAtomSignal<unknown>(undefined);
 
-        return {
-          get value() {
-            const valueWithUpdaters = stateManagerSignalInstance.value;
-
-            return Object.freeze(
-              Object.fromEntries(
-                Object.entries(valueWithUpdaters)
-                  .map(([key, valueOrUpdater]) => {
-                    if (!isUpdater(valueOrUpdater)) {
-                      return [key, valueOrUpdater];
-                    }
-                  })
-                  .filter((entry): entry is [string, unknown] => entry !== undefined),
-              ),
-            );
-          },
-          subscribe: stateManagerSignalInstance.subscribe.bind(stateManagerSignalInstance),
-          id: contextID,
+        const updateContextAtom = () => {
+          const valueWithUpdaters = this.value;
+          const filteredValue = Object.fromEntries(
+            Object.entries(valueWithUpdaters).filter(
+              ([, valueOrUpdater]) => !isUpdater(valueOrUpdater),
+            ),
+          );
+          contextAtom[atomSetter](Object.freeze(filteredValue));
         };
+
+        // Initial update
+        updateContextAtom();
+
+        // Subscribe to changes
+        this.subscribe(updateContextAtom);
+
+        return contextAtom;
       }
 
       public provide() {
@@ -232,7 +239,7 @@ export const defineState: DefineState = (defineStateCallback) => {
             .map(([key, signalOrUpdater]) => {
               if (
                 isUpdater(signalOrUpdater) ||
-                (signalOrUpdater as ContextSignal<unknown>).id === contextID
+                (signalOrUpdater as ContextAtomSignal<unknown>)._id === contextID
               ) {
                 return [key, signalOrUpdater];
               }
