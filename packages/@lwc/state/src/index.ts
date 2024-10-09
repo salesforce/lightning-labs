@@ -1,5 +1,6 @@
 import { type Signal, SignalBaseClass } from '@lwc/signals';
 import type {
+  ContextSignal,
   Computer,
   UnwrapSignal,
   MakeAtom,
@@ -9,8 +10,20 @@ import type {
   ExposedUpdater,
   DefineState,
 } from './types.ts';
+import { type RuntimeAdapter, RuntimeAdapterManager } from './runtime-interface.js';
+import { LWCAdapter } from './lwc-adapter.js';
 
 const atomSetter = Symbol('atomSetter');
+export const contextID = Symbol('contextID');
+
+export const connectContext = Symbol('connectContext');
+
+// New interface for context-related methods
+export interface ContextManager {
+  [connectContext](hostElement: unknown): void;
+  provide(): void;
+  inject(): Signal<unknown> | undefined;
+}
 
 class AtomSignal<T> extends SignalBaseClass<T> {
   private _value: T;
@@ -28,6 +41,10 @@ class AtomSignal<T> extends SignalBaseClass<T> {
   get value() {
     return this._value;
   }
+}
+
+class ContextAtomSignal<T> extends AtomSignal<T> {
+  public _id = contextID;
 }
 
 class ComputedSignal<T> extends SignalBaseClass<T> {
@@ -110,37 +127,124 @@ const update: MakeUpdate = <
 
 export const defineState: DefineState = (defineStateCallback) => {
   return (...args) => {
-    class StateManagerSignal<OuterStateShape> extends SignalBaseClass<OuterStateShape> {
+    class StateManagerSignal<OuterStateShape>
+      extends SignalBaseClass<OuterStateShape>
+      implements ContextManager
+    {
       private internalStateShape: Record<string, Signal<unknown> | ExposedUpdater>;
       private _value: OuterStateShape;
       private isStale = true;
       private isNotifyScheduled = false;
+      private contextCallbacks = new Set<(context: unknown) => void>();
+      private runtimeAdapterManager = new RuntimeAdapterManager();
 
       constructor() {
         super();
 
-        // @ts-ignore TODO: W-16769884
-        const fromContext: MakeContextHook = () => {};
+        // biome-ignore lint: fix it
+        const fromContext: MakeContextHook<any> = <T,>(_otherStateManagerSignal: any) => {
+          const contextAtomSignal = new ContextAtomSignal<T | undefined>(undefined);
+
+          const onCallback = (context: Signal<T | undefined> | undefined) => {
+            contextAtomSignal[atomSetter](context?.value);
+
+            if (context?.subscribe) {
+              context.subscribe(() => {
+                contextAtomSignal[atomSetter](context?.value);
+              });
+            }
+
+            this.contextCallbacks.delete(onCallback);
+          };
+
+          this.contextCallbacks.add(onCallback);
+          return contextAtomSignal;
+        };
 
         this.internalStateShape = defineStateCallback(atom, computed, update, fromContext)(...args);
 
         for (const signalOrUpdater of Object.values(this.internalStateShape)) {
-          if (!isUpdater(signalOrUpdater)) {
-            // Subscribe to changes to exposed state atoms and computeds, so that the entire
-            // state manager signal "reacts" when the atoms/computeds change.
+          if (signalOrUpdater && !isUpdater(signalOrUpdater)) {
             (signalOrUpdater as Signal<unknown>).subscribe(this.scheduledNotify.bind(this));
           }
         }
       }
 
+      [connectContext](hostElement: unknown) {
+        const newAdapter = new LWCAdapter(hostElement);
+        this.runtimeAdapter = newAdapter;
+
+        const adapter = this.runtimeAdapterManager.getAdapter();
+
+        if (this.contextCallbacks.size > 0) {
+          adapter.consumeContext();
+        }
+
+        for (const callback of this.contextCallbacks) {
+          callback(adapter.context);
+        }
+      }
+
+      private shareableContext(): ContextAtomSignal<unknown> {
+        const contextAtom = new ContextAtomSignal<unknown>(undefined);
+
+        const updateContextAtom = () => {
+          const valueWithUpdaters = this.value;
+          const filteredValue = Object.fromEntries(
+            Object.entries(valueWithUpdaters).filter(
+              ([, valueOrUpdater]) => !isUpdater(valueOrUpdater),
+            ),
+          );
+          contextAtom[atomSetter](Object.freeze(filteredValue));
+        };
+
+        // Initial update
+        updateContextAtom();
+
+        // Subscribe to changes
+        this.subscribe(updateContextAtom);
+
+        return contextAtom;
+      }
+
+      public provide() {
+        const adapter = this.runtimeAdapterManager.getAdapter();
+
+        if (!adapter) {
+          throw new Error(
+            `Connect to a host element by calling 'connect(elem)' before providing context.`,
+          );
+        }
+
+        adapter.provideContext(this.shareableContext());
+      }
+
+      public inject(): Signal<unknown> | undefined {
+        const adapter = this.runtimeAdapterManager.getAdapter();
+
+        if (!adapter) {
+          throw new Error(
+            `Connect to a host element by calling 'connect(elem)' before injecting context.`,
+          );
+        }
+
+        adapter.consumeContext();
+        return adapter.context;
+      }
+
       private computeValue() {
         const computedValue = Object.fromEntries(
-          Object.entries(this.internalStateShape).map(([key, signalOrUpdater]) => {
-            if (isUpdater(signalOrUpdater)) {
-              return [key, signalOrUpdater];
-            }
-            return [key, signalOrUpdater.value];
-          }),
+          Object.entries(this.internalStateShape)
+            .filter(([, signalOrUpdater]) => signalOrUpdater)
+            .map(([key, signalOrUpdater]) => {
+              if (
+                isUpdater(signalOrUpdater) ||
+                (signalOrUpdater as ContextAtomSignal<unknown>)._id === contextID
+              ) {
+                return [key, signalOrUpdater];
+              }
+              return [key, signalOrUpdater.value];
+            }),
         );
 
         this._value = Object.freeze(computedValue) as OuterStateShape;
@@ -167,8 +271,9 @@ export const defineState: DefineState = (defineStateCallback) => {
         return this._value;
       }
 
-      // TODO: W-16769884 instances of this class must take the shape of `ContextProvider` and
-      //       `ContextConsumer` in the same way that it takes the shape/implements `Signal`
+      set runtimeAdapter(adapter: RuntimeAdapter<object>) {
+        this.runtimeAdapterManager.setAdapter(adapter);
+      }
     }
     return new StateManagerSignal();
   };
