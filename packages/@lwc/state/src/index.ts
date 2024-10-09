@@ -10,11 +10,20 @@ import type {
   ExposedUpdater,
   DefineState,
 } from './types.ts';
-import { type RuntimeAdapter, RuntimeElement, RuntimeAdapterManager } from './runtime-interface.js';
+import { type RuntimeAdapter, RuntimeAdapterManager } from './runtime-interface.js';
 import { LWCAdapter } from './lwc-adapter.js';
 
 const atomSetter = Symbol('atomSetter');
 const contextID = Symbol('contextID');
+
+export const connectContext = Symbol('connectContext');
+
+// New interface for context-related methods
+export interface ContextManager {
+  [connectContext](hostElement: unknown): void;
+  provide(): void;
+  inject(): Signal<unknown> | undefined;
+}
 
 class AtomSignal<T> extends SignalBaseClass<T> {
   private _value: T;
@@ -32,6 +41,10 @@ class AtomSignal<T> extends SignalBaseClass<T> {
   get value() {
     return this._value;
   }
+}
+
+class ContextAtomSignal<T> extends AtomSignal<T> {
+  public _id = contextID;
 }
 
 class ComputedSignal<T> extends SignalBaseClass<T> {
@@ -112,59 +125,48 @@ const update: MakeUpdate = <
   };
 };
 
-interface Something {
-  connect: () => void;
-}
-
 export const defineState: DefineState = (defineStateCallback) => {
   return (...args) => {
-    class StateManagerSignal<OuterStateShape> extends SignalBaseClass<OuterStateShape> implements Something {
+    class StateManagerSignal<OuterStateShape>
+      extends SignalBaseClass<OuterStateShape>
+      implements ContextManager
+    {
       private internalStateShape: Record<string, Signal<unknown> | ExposedUpdater>;
       private _value: OuterStateShape;
       private isStale = true;
       private isNotifyScheduled = false;
-      // private contextProvider: ContextProvider<unknown>;
-      // private contextConsumer: ContextConsumer<unknown>;
-      // private host: WeakRef<RuntimeElement>;
-      // The only reason we use a Set is because WeakSet doesn't allow iteration
       private contextCallbacks = new Set<(context: unknown) => void>();
       private runtimeAdapterManager: RuntimeAdapterManager<object>;
 
       constructor() {
         super();
 
-        // ToDo: Look into changing this to a Signal so that we can avoid using
-        // and the value can be reactive instead of the callback approach.
-        // biome-ignore lint: allow for now
-        const fromContext: any = (callback: (context: OuterStateShape) => void) => {
-          this.contextCallbacks.add(callback);
+        // biome-ignore lint: fix it
+        const fromContext: MakeContextHook<any> = <T,>(_otherStateManagerSignal: any) => {
+          const contextAtomSignal = new ContextAtomSignal<Signal<T | undefined> | undefined>(
+            undefined,
+          );
+          this.contextCallbacks.add((context: Signal<T | undefined> | undefined) => {
+            contextAtomSignal[atomSetter](context);
+          });
+          return contextAtomSignal;
         };
 
         this.internalStateShape = defineStateCallback(atom, computed, update, fromContext)(...args);
 
         for (const signalOrUpdater of Object.values(this.internalStateShape)) {
           if (signalOrUpdater && !isUpdater(signalOrUpdater)) {
-            // Subscribe to changes to exposed state atoms and computeds, so that the entire
-            // state manager signal "reacts" when the atoms/computeds change.
             (signalOrUpdater as Signal<unknown>).subscribe(this.scheduledNotify.bind(this));
           }
         }
       }
 
-      public connect(hostElement: unknown) {
-        // This bit should move to lwc engine
+      [connectContext](hostElement: unknown) {
         const newAdapter = new LWCAdapter(hostElement);
-        this.setRuntimeAdapter(newAdapter);
-        // End of bit that should move to lwc engine
+        this.runtimeAdapter = newAdapter;
 
         const adapter = this.runtimeAdapterManager.getAdapter();
 
-        // This is a slight enhancement to "delay"
-        // connecting the consumer until it's actually needed
-        // A context consumer might live in a:
-        // Component OR in a State Manager.
-        // State Managers consumers will be invoked as soon as the StateManager is connected
-        // but for components, we'll wait until the component requests the context
         if (this.contextCallbacks.size > 0) {
           adapter.consumeContext();
         }
@@ -173,9 +175,6 @@ export const defineState: DefineState = (defineStateCallback) => {
           callback(adapter.context);
         }
       }
-
-      // todo: in later PR, add disconnect for when LightningElement (or whatever)
-      // gets disconnected from the DOM (and potentially reconnected later)
 
       private shareableContext(): ContextSignal<unknown> {
         const stateManagerSignalInstance = this;
@@ -201,8 +200,6 @@ export const defineState: DefineState = (defineStateCallback) => {
         };
       }
 
-      // If State Manager is connected to a host element
-      // then it can start "providing" it's value as context to any nested components
       public provide() {
         const adapter = this.runtimeAdapterManager.getAdapter();
 
@@ -215,10 +212,6 @@ export const defineState: DefineState = (defineStateCallback) => {
         adapter.provideContext(this.shareableContext());
       }
 
-      // If State Manager is connected to a host element
-      // then it can start "injecting" the context available to it
-      // Unlike 'fromContext', this can provide the context to the Components
-      // and StateManagers likewise.
       public inject(): Signal<unknown> | undefined {
         const adapter = this.runtimeAdapterManager.getAdapter();
 
@@ -271,14 +264,10 @@ export const defineState: DefineState = (defineStateCallback) => {
         return this._value;
       }
 
-      // ToDo: Make LWC Engine set the adapter
-      public setRuntimeAdapter(adapter: RuntimeAdapter) {
+      set runtimeAdapter(adapter: RuntimeAdapter<object>) {
         this.runtimeAdapterManager = new RuntimeAdapterManager();
         this.runtimeAdapterManager.setAdapter(adapter);
       }
-
-      // TODO: W-16769884 instances of this class must take the shape of `ContextProvider` and
-      //       `ContextConsumer` in the same way that it takes the shape/implements `Signal`
     }
     return new StateManagerSignal();
   };

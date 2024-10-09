@@ -31,9 +31,9 @@ export type MakeUpdate = <
   mutator: (signalValues: Values, ...mutatorArgs: MutatorArgs) => Values,
 ) => (...mutatorArgs: MutatorArgs) => void;
 
-export type MakeContextHook<T> = <StateDef extends () => Signal<T>>(
-  stateDef: StateDef,
-) => Signal<T>;
+export type MakeContextHook<T> = <StateDef extends (context: T) => void>(
+  callback: StateDef,
+) => Signal<T | undefined>;
 
 export type ExposedUpdater = (...updaterArgs: unknown[]) => void;
 
