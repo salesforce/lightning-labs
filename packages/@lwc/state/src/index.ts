@@ -10,19 +10,18 @@ import type {
   ExposedUpdater,
   DefineState,
 } from './types.ts';
-import { type RuntimeAdapter, RuntimeAdapterManager } from './runtime-interface.js';
-import { LWCAdapter } from './lwc-adapter.js';
+import type { RuntimeAdapter } from './runtime-interface.js';
 
 const atomSetter = Symbol('atomSetter');
 export const contextID = Symbol('contextID');
 
 export const connectContext = Symbol('connectContext');
 
+export { ContextfulLightningElement } from './contextful-lwc.js';
+
 // New interface for context-related methods
 export interface ContextManager {
-  [connectContext](hostElement: unknown): void;
-  provide(): void;
-  inject(): Signal<unknown> | undefined;
+  [connectContext](contextAdapter: RuntimeAdapter<object>): void;
 }
 
 class AtomSignal<T> extends SignalBaseClass<T> {
@@ -125,40 +124,67 @@ const update: MakeUpdate = <
   };
 };
 
-export const defineState: DefineState = (defineStateCallback) => {
-  return (...args) => {
-    class StateManagerSignal<OuterStateShape>
-      extends SignalBaseClass<OuterStateShape>
-      implements ContextManager
-    {
+export const defineState: DefineState = <
+  InnerStateShape extends Record<string, Signal<unknown> | ExposedUpdater>,
+  OuterStateShape extends {
+    readonly [SignalName in keyof InnerStateShape]: UnwrapSignal<InnerStateShape[SignalName]>;
+  },
+  Args extends unknown[],
+  ContextShape,
+>(
+  defineStateCallback: (
+    atom: MakeAtom,
+    computed: MakeComputed,
+    update: MakeUpdate,
+    fromContext: MakeContextHook<ContextShape>,
+  ) => (...args: Args) => InnerStateShape,
+) => {
+  const stateDefinition = (...args: Args) => {
+    class StateManagerSignal extends SignalBaseClass<OuterStateShape> implements ContextManager {
       private internalStateShape: Record<string, Signal<unknown> | ExposedUpdater>;
       private _value: OuterStateShape;
       private isStale = true;
       private isNotifyScheduled = false;
-      private contextCallbacks = new Set<(context: unknown) => void>();
-      private runtimeAdapterManager = new RuntimeAdapterManager();
+      // private contextCallbacks = new Set<(context: unknown) => void>();
+      private runtimeAdapter: RuntimeAdapter<object> | null = null;
+      // biome-ignore lint/suspicious/noExplicitAny: we actually do want this, thanks
+      private contextSignals = new Map<any, Signal<unknown>>();
 
       constructor() {
         super();
 
         // biome-ignore lint: fix it
-        const fromContext: MakeContextHook<any> = <T,>(_otherStateManagerSignal: any) => {
-          const contextAtomSignal = new ContextAtomSignal<T | undefined>(undefined);
+        const fromContext: MakeContextHook<any> = <T,>(contextVarietyUniqueId: any) => {
+          if (this.contextSignals.has(contextVarietyUniqueId)) {
+            return this.contextSignals.get(contextVarietyUniqueId);
+          }
 
-          const onCallback = (context: Signal<T | undefined> | undefined) => {
-            contextAtomSignal[atomSetter](context?.value);
+          // When context is not connected, we still provide a signal but the value of that
+          // signal is undefined.
+          const localContextSignal = new ContextAtomSignal(undefined);
+          this.contextSignals.set(contextVarietyUniqueId, localContextSignal);
 
-            if (context?.subscribe) {
-              context.subscribe(() => {
-                contextAtomSignal[atomSetter](context?.value);
-              });
-            }
+          if (this.runtimeAdapter) {
+            // Attempt to connect to context up in the tree. The callback is invoked if a provider is found
+            // in a parent/ancestor that provides the specific context variety that was requested.
+            this.runtimeAdapter.consumeContext(
+              contextVarietyUniqueId,
+              (providedContextSignal: Signal<T>) => {
+                // Make sure the local signal initially shares the same value as the provided context signal.
+                localContextSignal[atomSetter](providedContextSignal.value);
+                // TODO: capture this unsubscribe in a map somewhere so that when the state manager disconnects
+                //       from the DOM, we can disconnect the context as well.
+                const _unsubscribe = providedContextSignal.subscribe(() => {
+                  localContextSignal[atomSetter](providedContextSignal.value);
+                });
+              },
+            );
+          }
 
-            this.contextCallbacks.delete(onCallback);
-          };
+          // TODO: if this.runtimeAdapter is null but is not-null in the future, we'll need to connect
+          //       to context in the same way we have done above.
 
-          this.contextCallbacks.add(onCallback);
-          return contextAtomSignal;
+          return localContextSignal;
         };
 
         this.internalStateShape = defineStateCallback(atom, computed, update, fromContext)(...args);
@@ -170,19 +196,23 @@ export const defineState: DefineState = (defineStateCallback) => {
         }
       }
 
-      [connectContext](hostElement: unknown) {
-        const newAdapter = new LWCAdapter(hostElement);
-        this.runtimeAdapter = newAdapter;
+      [connectContext](runtimeAdapter: RuntimeAdapter<object>) {
+        // A state manager always offers to provide state of its own variety.
+        // TODO: we will want it to be possible for state manager updaters to only be
+        //       accessible when that state manager is consumed directly, and not when
+        //       it is consumed via context. We don't currently have a mechanism to
+        //       disambuguate those two kinds of updaters; we can either expose them
+        //       to context-consumers (as it done in the line below) or we can restrict
+        //       them entirely (via shareableContext). We'll want something in between.
+        runtimeAdapter.provideContext(stateDefinition, this);
 
-        const adapter = this.runtimeAdapterManager.getAdapter();
+        // Q: What happens when a single state manager instance is connected in multiple places
+        // and could conceivably get access to a context-variety via multiple of those "mount"
+        // points?
+        // TODO: just pick a behavior, get it working in the example, make the decision once
+        // we have something concrete to work with, write a test, and then work backwards
 
-        if (this.contextCallbacks.size > 0) {
-          adapter.consumeContext();
-        }
-
-        for (const callback of this.contextCallbacks) {
-          callback(adapter.context);
-        }
+        this.runtimeAdapter = runtimeAdapter;
       }
 
       private shareableContext(): ContextAtomSignal<unknown> {
@@ -205,31 +235,6 @@ export const defineState: DefineState = (defineStateCallback) => {
         this.subscribe(updateContextAtom);
 
         return contextAtom;
-      }
-
-      public provide() {
-        const adapter = this.runtimeAdapterManager.getAdapter();
-
-        if (!adapter) {
-          throw new Error(
-            `Connect to a host element by calling 'connect(elem)' before providing context.`,
-          );
-        }
-
-        adapter.provideContext(this.shareableContext());
-      }
-
-      public inject(): Signal<unknown> | undefined {
-        const adapter = this.runtimeAdapterManager.getAdapter();
-
-        if (!adapter) {
-          throw new Error(
-            `Connect to a host element by calling 'connect(elem)' before injecting context.`,
-          );
-        }
-
-        adapter.consumeContext();
-        return adapter.context;
       }
 
       private computeValue() {
@@ -270,11 +275,8 @@ export const defineState: DefineState = (defineStateCallback) => {
         }
         return this._value;
       }
-
-      set runtimeAdapter(adapter: RuntimeAdapter<object>) {
-        this.runtimeAdapterManager.setAdapter(adapter);
-      }
     }
     return new StateManagerSignal();
   };
+  return stateDefinition;
 };

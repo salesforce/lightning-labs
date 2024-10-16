@@ -53,6 +53,4 @@ export type DefineState = <
     update: MakeUpdate,
     fromContext: MakeContextHook<ContextShape>,
   ) => (...args: Args) => InnerStateShape,
-) => (
-  ...args: Args
-) => Signal<OuterStateShape> & { provide: () => void; inject: () => Signal<unknown> | undefined };
+) => (...args: Args) => Signal<OuterStateShape>;
