@@ -1,6 +1,6 @@
 import { describe, expect, test, vi, beforeEach } from 'vitest';
 import { defineState, connectContext, contextID } from '../index.js';
-import type { RuntimeAdapter } from '../runtime-interface.js';
+import type { ContextRuntimeAdapter } from '../runtime-interface.js';
 
 const stateFactory = defineState((atom, computed, update, fromContext) => (...args) => {
   const name = atom(args[0]);
@@ -28,7 +28,7 @@ const sharedContext = {
   id: contextID,
 };
 
-class MockRuntimeAdapter implements RuntimeAdapter<object> {
+class MockContextRuntimeAdapter implements ContextRuntimeAdapter<object> {
   isServerSide = false;
   element = new WeakRef({});
   createWeakRef = <T extends object>(value: T) => new WeakRef(value);
@@ -41,7 +41,7 @@ class MockRuntimeAdapter implements RuntimeAdapter<object> {
   });
 }
 
-const mockAdapter = new MockRuntimeAdapter();
+const mockAdapter = new MockContextRuntimeAdapter();
 
 const flushMicrotasks = () => Promise.resolve();
 
