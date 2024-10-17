@@ -1,6 +1,6 @@
 import { LightningElement } from 'lwc';
 import { connectContext, type ContextManager } from './index.js';
-import type { RuntimeAdapter } from './runtime-interface.js';
+import type { ContextRuntimeAdapter } from './runtime-interface.js';
 import type { Signal } from '@lwc/signals';
 
 export const symbolContextKey = Symbol('context');
@@ -40,7 +40,7 @@ export class ContextfulLightningElement extends LightningElement {
     let isProvidingContext = false;
     const providedContextVarieties = new Map<unknown, Signal<unknown>>();
 
-    const contextRuntimeAdapter: RuntimeAdapter<LightningElement> = {
+    const contextRuntimeAdapter: ContextRuntimeAdapter<LightningElement> = {
       isServerSide: false,
 
       provideContext<T extends object>(

@@ -10,7 +10,7 @@ import type {
   ExposedUpdater,
   DefineState,
 } from './types.ts';
-import type { RuntimeAdapter } from './runtime-interface.js';
+import type { ContextRuntimeAdapter } from './runtime-interface.js';
 
 const atomSetter = Symbol('atomSetter');
 export const contextID = Symbol('contextID');
@@ -21,7 +21,7 @@ export { ContextfulLightningElement } from './contextful-lwc.js';
 
 // New interface for context-related methods
 export interface ContextManager {
-  [connectContext](contextAdapter: RuntimeAdapter<object>): void;
+  [connectContext](contextAdapter: ContextRuntimeAdapter<object>): void;
 }
 
 class AtomSignal<T> extends SignalBaseClass<T> {
@@ -147,7 +147,9 @@ export const defineState: DefineState = <
       private isNotifyScheduled = false;
       // biome-ignore lint/suspicious/noExplicitAny: we actually do want this, thanks
       private contextSignals = new Map<any, Signal<unknown>>();
-      private contextConsumptionQueue: Array<(runtimeAdapter: RuntimeAdapter<object>) => void> = [];
+      private contextConsumptionQueue: Array<
+        (runtimeAdapter: ContextRuntimeAdapter<object>) => void
+      > = [];
 
       constructor() {
         super();
@@ -166,7 +168,7 @@ export const defineState: DefineState = <
           // We need to defer the consumption of context to the time when the state manager
           // instance is actually connected to a component tree or some other context-providing
           // tree.
-          this.contextConsumptionQueue.push((runtimeAdapter: RuntimeAdapter<object>) => {
+          this.contextConsumptionQueue.push((runtimeAdapter: ContextRuntimeAdapter<object>) => {
             if (!runtimeAdapter) {
               throw new Error(
                 'Implementation error: runtimeAdapter must be present at the time of connect.',
@@ -202,7 +204,7 @@ export const defineState: DefineState = <
         }
       }
 
-      [connectContext](runtimeAdapter: RuntimeAdapter<object>) {
+      [connectContext](runtimeAdapter: ContextRuntimeAdapter<object>) {
         // A state manager always offers to provide state of its own variety.
         // TODO: we will want it to be possible for state manager updaters to only be
         //       accessible when that state manager is consumed directly, and not when
