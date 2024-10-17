@@ -14,16 +14,19 @@ globalThis.lwcRuntimeFlags.ENABLE_EXPERIMENTAL_SIGNALS = true;
 // TODO: shouldn't we be able to await Promise.resolve() / microtask?
 const freshRender = () => new Promise((resolve) => window.requestAnimationFrame(resolve));
 
-describe('<x-contextparent>', () => {
-  it('renders', async () => {
-    const parentEl = document.createElement('div');
-    document.body.appendChild(parentEl);
+describe('context', () => {
+  beforeEach(() => {
+    const parentEl = document.querySelector('#mount');
+    parentEl.innerHTML = '';
+  });
+
+  it('is provided to children reactively', async () => {
+    // const parentEl = document.createElement('div');
+    const parentEl = document.querySelector('#mount');
+    // document.body.appendChild(parentEl);
     const el = await clientSideRender(parentEl, componentPath, {});
 
     const contextParent = querySelectorDeep('x-context-parent', el);
-    console.log('contextParent', contextParent);
-    const contextChild = querySelectorDeep('x-context-child', el);
-    console.log('contextChild', contextChild);
 
     const childContent = querySelectorDeep('.child-content', el);
     expect(childContent.innerText).to.include('parentFoo');
@@ -31,5 +34,19 @@ describe('<x-contextparent>', () => {
     contextParent.parentState.value.updateName('newFoo');
     await freshRender();
     expect(childContent.innerText).to.include('newFoo');
+  });
+
+  it('is not provided to children without provider in the ancestor chain', async () => {
+    const parentEl = document.querySelector('#mount');
+    const el = await clientSideRender(parentEl, componentPath, {});
+
+    const contextParent = querySelectorDeep('x-context-parent', el);
+
+    const childContent = querySelectorDeep('.lonely-child-content', el);
+    expect(childContent.innerText).to.include('not available');
+
+    contextParent.parentState.value.updateName('newFoo');
+    await freshRender();
+    expect(childContent.innerText).to.include('not available');
   });
 });
