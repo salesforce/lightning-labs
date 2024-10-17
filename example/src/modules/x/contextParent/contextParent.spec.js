@@ -15,6 +15,6 @@ describe('<x-parent>', () => {
   it('renders', async () => {
     const parentEl = document.createElement('div');
     document.body.appendChild(parentEl);
-    const el = await clientSideRender(parentEl, componentPath, {}, true);
+    const el = await clientSideRender(parentEl, componentPath, {});
   });
 });

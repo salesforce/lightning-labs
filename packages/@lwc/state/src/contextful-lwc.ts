@@ -23,10 +23,12 @@ export class ContextRequestEvent extends CustomEvent<{
 }
 
 export class ContextfulLightningElement extends LightningElement {
-  constructor() {
-    super();
+  connectedCallback(): void {
+    this.setupContextReactivity();
+  }
 
-    const contextfulFields = Object.getOwnPropertyNames(this).filter(
+  private setupContextReactivity() {
+    const contextfulFields = Object.getOwnPropertyNames(Object.getPrototypeOf(this)).filter(
       (propName) => this[propName][connectContext],
     );
 

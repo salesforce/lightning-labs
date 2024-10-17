@@ -145,10 +145,9 @@ export const defineState: DefineState = <
       private _value: OuterStateShape;
       private isStale = true;
       private isNotifyScheduled = false;
-      // private contextCallbacks = new Set<(context: unknown) => void>();
-      private runtimeAdapter: RuntimeAdapter<object> | null = null;
       // biome-ignore lint/suspicious/noExplicitAny: we actually do want this, thanks
       private contextSignals = new Map<any, Signal<unknown>>();
+      private contextConsumptionQueue: Array<(runtimeAdapter: RuntimeAdapter<object>) => void> = [];
 
       constructor() {
         super();
@@ -164,10 +163,17 @@ export const defineState: DefineState = <
           const localContextSignal = new ContextAtomSignal(undefined);
           this.contextSignals.set(contextVarietyUniqueId, localContextSignal);
 
-          if (this.runtimeAdapter) {
-            // Attempt to connect to context up in the tree. The callback is invoked if a provider is found
-            // in a parent/ancestor that provides the specific context variety that was requested.
-            this.runtimeAdapter.consumeContext(
+          // We need to defer the consumption of context to the time when the state manager
+          // instance is actually connected to a component tree or some other context-providing
+          // tree.
+          this.contextConsumptionQueue.push((runtimeAdapter: RuntimeAdapter<object>) => {
+            if (!runtimeAdapter) {
+              throw new Error(
+                'Implementation error: runtimeAdapter must be present at the time of connect.',
+              );
+            }
+
+            runtimeAdapter.consumeContext(
               contextVarietyUniqueId,
               (providedContextSignal: Signal<T>) => {
                 // Make sure the local signal initially shares the same value as the provided context signal.
@@ -179,7 +185,7 @@ export const defineState: DefineState = <
                 });
               },
             );
-          }
+          });
 
           // TODO: if this.runtimeAdapter is null but is not-null in the future, we'll need to connect
           //       to context in the same way we have done above.
@@ -206,13 +212,17 @@ export const defineState: DefineState = <
         //       them entirely (via shareableContext). We'll want something in between.
         runtimeAdapter.provideContext(stateDefinition, this);
 
+        // Attempt to connect to context up in the tree. The callback is invoked if a provider is found
+        // in a parent/ancestor that provides the specific context variety that was requested.
+        for (const connectContext of this.contextConsumptionQueue) {
+          connectContext(runtimeAdapter);
+        }
+
         // Q: What happens when a single state manager instance is connected in multiple places
         // and could conceivably get access to a context-variety via multiple of those "mount"
         // points?
         // TODO: just pick a behavior, get it working in the example, make the decision once
         // we have something concrete to work with, write a test, and then work backwards
-
-        this.runtimeAdapter = runtimeAdapter;
       }
 
       private shareableContext(): ContextAtomSignal<unknown> {
@@ -278,5 +288,6 @@ export const defineState: DefineState = <
     }
     return new StateManagerSignal();
   };
+
   return stateDefinition;
 };
