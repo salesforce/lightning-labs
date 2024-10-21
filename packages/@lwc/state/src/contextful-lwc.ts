@@ -29,7 +29,7 @@ export class ContextfulLightningElement extends LightningElement {
 
   private setupContextReactivity() {
     const contextfulFields = Object.getOwnPropertyNames(Object.getPrototypeOf(this)).filter(
-      (propName) => this[propName][connectContext],
+      (propName) => this[propName]?.[connectContext],
     );
 
     if (contextfulFields.length === 0) {
