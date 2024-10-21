@@ -1,14 +1,20 @@
-type Callback = (value: unknown) => void;
+import type { Signal } from '@lwc/signals';
 
 export const symbolContextKey = Symbol('context');
+export type ContextProvidedCallback = (contextSignal: Signal<unknown>) => void;
 
 export class ContextRequestEvent extends CustomEvent<{
-  key: unknown;
-  callback: Callback;
+  key: typeof symbolContextKey;
+  contextVariety: unknown;
+  callback: ContextProvidedCallback;
 }> {
   static readonly EVENT_NAME = 'lightning:context-request';
 
-  constructor(detail: { key: unknown; callback: Callback }) {
-    super(ContextRequestEvent.EVENT_NAME, { bubbles: true, composed: true, detail });
+  constructor(detail: { contextVariety: unknown; callback: ContextProvidedCallback }) {
+    super(ContextRequestEvent.EVENT_NAME, {
+      bubbles: true,
+      composed: true,
+      detail: { ...detail, key: symbolContextKey },
+    });
   }
 }

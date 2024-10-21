@@ -1,26 +1,8 @@
-import { LightningElement } from 'lwc';
-import { connectContext, type ContextManager } from './index.js';
-import type { ContextRuntimeAdapter } from './runtime-interface.js';
 import type { Signal } from '@lwc/signals';
-
-export const symbolContextKey = Symbol('context');
-type ContextProvidedCallback = (contextSignal: Signal<unknown>) => void;
-
-export class ContextRequestEvent extends CustomEvent<{
-  key: typeof symbolContextKey;
-  contextVariety: unknown;
-  callback: ContextProvidedCallback;
-}> {
-  static readonly EVENT_NAME = 'lightning:context-request';
-
-  constructor(detail: { contextVariety: unknown; callback: ContextProvidedCallback }) {
-    super(ContextRequestEvent.EVENT_NAME, {
-      bubbles: true,
-      composed: true,
-      detail: { ...detail, key: symbolContextKey },
-    });
-  }
-}
+import { LightningElement } from 'lwc';
+import { ContextRequestEvent, type ContextProvidedCallback, symbolContextKey } from './event.js';
+import { connectContext } from './index.js';
+import type { ContextRuntimeAdapter } from './runtime-interface.js';
 
 export class ContextfulLightningElement extends LightningElement {
   connectedCallback(): void {
@@ -89,8 +71,7 @@ export class ContextfulLightningElement extends LightningElement {
     };
 
     for (const contextfulField of contextfulFields) {
-      const contextAwareThing = this[contextfulField];
-      contextAwareThing[connectContext](contextRuntimeAdapter);
+      this[contextfulField][connectContext](contextRuntimeAdapter);
     }
   }
 }
