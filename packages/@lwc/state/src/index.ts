@@ -1,5 +1,6 @@
 import { type Signal, SignalBaseClass } from '@lwc/signals';
 import type {
+  ContextSignal,
   Computer,
   UnwrapSignal,
   MakeAtom,
@@ -9,8 +10,19 @@ import type {
   ExposedUpdater,
   DefineState,
 } from './types.ts';
+import type { ContextRuntimeAdapter } from './runtime-interface.js';
 
 const atomSetter = Symbol('atomSetter');
+export const contextID = Symbol('contextID');
+
+export const connectContext = Symbol('connectContext');
+
+export { ContextfulLightningElement } from './contextful-lwc.js';
+
+// New interface for context-related methods
+export interface ContextManager {
+  [connectContext](contextAdapter: ContextRuntimeAdapter<object>): void;
+}
 
 class AtomSignal<T> extends SignalBaseClass<T> {
   private _value: T;
@@ -28,6 +40,10 @@ class AtomSignal<T> extends SignalBaseClass<T> {
   get value() {
     return this._value;
   }
+}
+
+class ContextAtomSignal<T> extends AtomSignal<T> {
+  public _id = contextID;
 }
 
 class ComputedSignal<T> extends SignalBaseClass<T> {
@@ -108,39 +124,144 @@ const update: MakeUpdate = <
   };
 };
 
-export const defineState: DefineState = (defineStateCallback) => {
-  return (...args) => {
-    class StateManagerSignal<OuterStateShape> extends SignalBaseClass<OuterStateShape> {
+export const defineState: DefineState = <
+  InnerStateShape extends Record<string, Signal<unknown> | ExposedUpdater>,
+  OuterStateShape extends {
+    readonly [SignalName in keyof InnerStateShape]: UnwrapSignal<InnerStateShape[SignalName]>;
+  },
+  Args extends unknown[],
+  ContextShape,
+>(
+  defineStateCallback: (
+    atom: MakeAtom,
+    computed: MakeComputed,
+    update: MakeUpdate,
+    fromContext: MakeContextHook<ContextShape>,
+  ) => (...args: Args) => InnerStateShape,
+) => {
+  const stateDefinition = (...args: Args) => {
+    class StateManagerSignal extends SignalBaseClass<OuterStateShape> implements ContextManager {
       private internalStateShape: Record<string, Signal<unknown> | ExposedUpdater>;
       private _value: OuterStateShape;
       private isStale = true;
       private isNotifyScheduled = false;
+      // biome-ignore lint/suspicious/noExplicitAny: we actually do want this, thanks
+      private contextSignals = new Map<any, Signal<unknown>>();
+      private contextConsumptionQueue: Array<
+        (runtimeAdapter: ContextRuntimeAdapter<object>) => void
+      > = [];
 
       constructor() {
         super();
 
-        // @ts-ignore TODO: W-16769884
-        const fromContext: MakeContextHook = () => {};
+        // biome-ignore lint: fix it
+        const fromContext: MakeContextHook<any> = <T,>(contextVarietyUniqueId: any) => {
+          if (this.contextSignals.has(contextVarietyUniqueId)) {
+            return this.contextSignals.get(contextVarietyUniqueId);
+          }
+
+          // When context is not connected, we still provide a signal but the value of that
+          // signal is undefined.
+          const localContextSignal = new ContextAtomSignal(undefined);
+          this.contextSignals.set(contextVarietyUniqueId, localContextSignal);
+
+          // We need to defer the consumption of context to the time when the state manager
+          // instance is actually connected to a component tree or some other context-providing
+          // tree.
+          this.contextConsumptionQueue.push((runtimeAdapter: ContextRuntimeAdapter<object>) => {
+            if (!runtimeAdapter) {
+              throw new Error(
+                'Implementation error: runtimeAdapter must be present at the time of connect.',
+              );
+            }
+
+            runtimeAdapter.consumeContext(
+              contextVarietyUniqueId,
+              (providedContextSignal: Signal<T>) => {
+                // Make sure the local signal initially shares the same value as the provided context signal.
+                localContextSignal[atomSetter](providedContextSignal.value);
+                // TODO: capture this unsubscribe in a map somewhere so that when the state manager disconnects
+                //       from the DOM, we can disconnect the context as well.
+                const _unsubscribe = providedContextSignal.subscribe(() => {
+                  localContextSignal[atomSetter](providedContextSignal.value);
+                });
+              },
+            );
+          });
+
+          // TODO: if this.runtimeAdapter is null but is not-null in the future, we'll need to connect
+          //       to context in the same way we have done above.
+
+          return localContextSignal;
+        };
 
         this.internalStateShape = defineStateCallback(atom, computed, update, fromContext)(...args);
 
         for (const signalOrUpdater of Object.values(this.internalStateShape)) {
-          if (!isUpdater(signalOrUpdater)) {
-            // Subscribe to changes to exposed state atoms and computeds, so that the entire
-            // state manager signal "reacts" when the atoms/computeds change.
+          if (signalOrUpdater && !isUpdater(signalOrUpdater)) {
             (signalOrUpdater as Signal<unknown>).subscribe(this.scheduledNotify.bind(this));
           }
         }
       }
 
+      [connectContext](runtimeAdapter: ContextRuntimeAdapter<object>) {
+        // A state manager always offers to provide state of its own variety.
+        // TODO: we will want it to be possible for state manager updaters to only be
+        //       accessible when that state manager is consumed directly, and not when
+        //       it is consumed via context. We don't currently have a mechanism to
+        //       disambuguate those two kinds of updaters; we can either expose them
+        //       to context-consumers (as it done in the line below) or we can restrict
+        //       them entirely (via shareableContext). We'll want something in between.
+        runtimeAdapter.provideContext(stateDefinition, this);
+
+        // Attempt to connect to context up in the tree. The callback is invoked if a provider is found
+        // in a parent/ancestor that provides the specific context variety that was requested.
+        for (const connectContext of this.contextConsumptionQueue) {
+          connectContext(runtimeAdapter);
+        }
+
+        // Q: What happens when a single state manager instance is connected in multiple places
+        // and could conceivably get access to a context-variety via multiple of those "mount"
+        // points?
+        // TODO: just pick a behavior, get it working in the example, make the decision once
+        // we have something concrete to work with, write a test, and then work backwards
+      }
+
+      private shareableContext(): ContextAtomSignal<unknown> {
+        const contextAtom = new ContextAtomSignal<unknown>(undefined);
+
+        const updateContextAtom = () => {
+          const valueWithUpdaters = this.value;
+          const filteredValue = Object.fromEntries(
+            Object.entries(valueWithUpdaters).filter(
+              ([, valueOrUpdater]) => !isUpdater(valueOrUpdater),
+            ),
+          );
+          contextAtom[atomSetter](Object.freeze(filteredValue));
+        };
+
+        // Initial update
+        updateContextAtom();
+
+        // Subscribe to changes
+        this.subscribe(updateContextAtom);
+
+        return contextAtom;
+      }
+
       private computeValue() {
         const computedValue = Object.fromEntries(
-          Object.entries(this.internalStateShape).map(([key, signalOrUpdater]) => {
-            if (isUpdater(signalOrUpdater)) {
-              return [key, signalOrUpdater];
-            }
-            return [key, signalOrUpdater.value];
-          }),
+          Object.entries(this.internalStateShape)
+            .filter(([, signalOrUpdater]) => signalOrUpdater)
+            .map(([key, signalOrUpdater]) => {
+              if (
+                isUpdater(signalOrUpdater) ||
+                (signalOrUpdater as ContextAtomSignal<unknown>)._id === contextID
+              ) {
+                return [key, signalOrUpdater];
+              }
+              return [key, signalOrUpdater.value];
+            }),
         );
 
         this._value = Object.freeze(computedValue) as OuterStateShape;
@@ -166,10 +287,9 @@ export const defineState: DefineState = (defineStateCallback) => {
         }
         return this._value;
       }
-
-      // TODO: W-16769884 instances of this class must take the shape of `ContextProvider` and
-      //       `ContextConsumer` in the same way that it takes the shape/implements `Signal`
     }
     return new StateManagerSignal();
   };
+
+  return stateDefinition;
 };
