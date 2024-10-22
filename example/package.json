@@ -5,7 +5,7 @@
     "@lwc/wds-playground": "*"
   },
   "scripts": {
-    "test": "test-lwcs /Users/rakshit.verma/Documents/code/lightning-labs/example/src/modules/x/contextRoot/context.spec.js --puppeteer",
+    "test": "test-lwcs ./**/*.spec.js --puppeteer",
     "test-debug": "test-lwcs ./**/*.spec.js --debug --puppeteer",
     "test-excessive": "test-lwcs ./**/*.excessive-spec.js",
     "playground": "npx playground x/parent --open"
