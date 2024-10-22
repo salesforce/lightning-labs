@@ -1,15 +1,6 @@
-import {
-  expect,
-  hydrateElement,
-  insertMarkupIntoDom,
-  querySelectorDeep,
-  renderToMarkup,
-  clientSideRender,
-} from '@lwc/test-runner';
+import { expect, querySelectorDeep, clientSideRender } from '@lwc/test-runner';
 
 const componentPath = import.meta.resolve('./contextRoot.js');
-
-// globalThis.lwcRuntimeFlags.ENABLE_EXPERIMENTAL_SIGNALS = true;
 
 // TODO: shouldn't we be able to await Promise.resolve() / microtask?
 const freshRender = () => new Promise((resolve) => window.requestAnimationFrame(resolve));
@@ -62,5 +53,27 @@ describe('context', () => {
 
     expect(childContent.innerText).to.include('newFoo');
     expect(childSiblingContent.innerText).to.include('newFoo');
+  });
+
+  it('nested children can access context reactively', async () => {
+    const el = await clientSideRender(parentEl, componentPath, {});
+    const contextParent = querySelectorDeep('x-context-parent', el);
+    const grandChildContent = querySelectorDeep('.grand-child-content-parent');
+
+    expect(grandChildContent.innerText).to.include('parentFoo');
+
+    contextParent.parentState.value.updateName('newFoo');
+    await freshRender();
+
+    expect(grandChildContent.innerText).to.include('newFoo');
+  });
+
+  it('nested children can access context from multiple parents', async () => {
+    const el = await clientSideRender(parentEl, componentPath, {});
+    const grandChildContentParent = querySelectorDeep('.grand-child-content-parent');
+    const grandChildContentChild = querySelectorDeep('.grand-child-content-child');
+
+    expect(grandChildContentParent.innerText).to.include('parentFoo');
+    expect(grandChildContentChild.innerText).to.include('bar');
   });
 });
