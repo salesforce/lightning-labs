@@ -1,8 +1,7 @@
-import { api } from 'lwc';
 import { ContextfulLightningElement, defineState } from '@lwc/state';
 import childStateFactory from 'x/childState';
 
-export default class ContextLonelyChild extends ContextfulLightningElement {
+export default class ContextChildSibling extends ContextfulLightningElement {
   childState = childStateFactory();
 
   get nameProvidedByParent() {

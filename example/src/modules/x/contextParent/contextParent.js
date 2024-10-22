@@ -1,6 +1,6 @@
 import { api } from 'lwc';
 import { ContextfulLightningElement, defineState } from '@lwc/state';
-import parentStateFactory from './parentState.js';
+import parentStateFactory from 'x/parentState';
 
 export default class ContextParent extends ContextfulLightningElement {
   @api
