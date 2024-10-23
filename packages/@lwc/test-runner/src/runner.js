@@ -30,6 +30,7 @@ export async function main() {
           import "${IMPORT_META_ENV_URL}";
           window.lwcRuntimeFlags = window.lwcRuntimeFlags || {};
           window.lwcRuntimeFlags.ENABLE_LIGHT_DOM_COMPONENTS = true;
+          window.lwcRuntimeFlags.ENABLE_EXPERIMENTAL_SIGNALS = true;
         </script>
         </head>
         <body>
