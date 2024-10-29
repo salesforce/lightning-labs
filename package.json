@@ -11,7 +11,7 @@
     "prepare": "husky || true",
     "//": "This is not yet enabled in CI.",
     "release": "semantic-release",
-    "test": "npm run test --workspace example",
+    "test": "npm run test --workspaces --if-present",
     "test:all": "npm run check && npm run test",
     "build": "npm run build --workspace @lwc/state"
   },
