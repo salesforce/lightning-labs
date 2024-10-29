@@ -1,9 +1,12 @@
 import type { Signal } from '@lwc/signals';
-// Remove the LightningElement import
+
+export interface WritableSignal<T> extends Signal<T> {
+  set value(newValue: T);
+}
 
 export type UnwrapSignal<T> = T extends Signal<infer Inner> ? Inner : T;
 
-export type MakeAtom = <T>(val: T) => Signal<T>;
+export type MakeAtom = <T>(val: T) => WritableSignal<T>;
 
 export type Computer<T> = (signalValues: Record<string, unknown>) => T;
 

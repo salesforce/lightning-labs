@@ -1,6 +1,5 @@
 import { type Signal, SignalBaseClass } from '@lwc/signals';
 import type {
-  ContextSignal,
   Computer,
   UnwrapSignal,
   MakeAtom,
@@ -92,7 +91,27 @@ class ComputedSignal<T> extends SignalBaseClass<T> {
 const isUpdater = (signalOrUpdater: Signal<unknown> | ExposedUpdater) =>
   typeof signalOrUpdater === 'function';
 
-const atom: MakeAtom = <T,>(initialValue: T) => new AtomSignal<T>(initialValue);
+const proxyToAtom = new WeakMap();
+
+const atom: MakeAtom = <T,>(initialValue: T) => {
+  const atomSignal = new AtomSignal<T>(initialValue);
+
+  // returning a proxied Atom siganls allows access to value setter
+  // from within the state manager factory
+  // but, prevents direct mutations from shared atom signals like ContextAtomSignal
+  const proxySignal = new Proxy(atomSignal, {
+    set(target, prop, newValue) {
+      if (prop === 'value') {
+        target[atomSetter](newValue);
+        return true;
+      }
+      return Reflect.set(target, prop, newValue);
+    },
+  });
+
+  proxyToAtom.set(proxySignal, atomSignal);
+  return proxySignal;
+};
 
 const computed: MakeComputed = (inputSignalsObj, computer) =>
   new ComputedSignal(inputSignalsObj, computer);
@@ -123,6 +142,10 @@ const update: MakeUpdate = <
     }
   };
 };
+
+function unwrapProxy<T>(proxy: AtomSignal<T>): AtomSignal<T> | undefined {
+  return proxyToAtom.has(proxy) ? proxyToAtom.get(proxy) : undefined;
+}
 
 export const defineState: DefineState = <
   InnerStateShape extends Record<string, Signal<unknown> | ExposedUpdater>,
@@ -195,7 +218,20 @@ export const defineState: DefineState = <
           return localContextSignal;
         };
 
-        this.internalStateShape = defineStateCallback(atom, computed, update, fromContext)(...args);
+        const state = defineStateCallback(atom, computed, update, fromContext)(...args);
+
+        this.internalStateShape = Object.fromEntries(
+          Object.entries(state).map(([key, maybeProxy]) => {
+            const maybeAtom = unwrapProxy(maybeProxy as AtomSignal<unknown>);
+
+            // only atomSignals would be wrapped in proxies
+            // computeds and updaters are not proxified
+            if (maybeAtom) {
+              return [key, maybeAtom];
+            }
+            return [key, maybeProxy];
+          }),
+        );
 
         for (const signalOrUpdater of Object.values(this.internalStateShape)) {
           if (signalOrUpdater && !isUpdater(signalOrUpdater)) {
@@ -225,28 +261,6 @@ export const defineState: DefineState = <
         // points?
         // TODO: just pick a behavior, get it working in the example, make the decision once
         // we have something concrete to work with, write a test, and then work backwards
-      }
-
-      private shareableContext(): ContextAtomSignal<unknown> {
-        const contextAtom = new ContextAtomSignal<unknown>(undefined);
-
-        const updateContextAtom = () => {
-          const valueWithUpdaters = this.value;
-          const filteredValue = Object.fromEntries(
-            Object.entries(valueWithUpdaters).filter(
-              ([, valueOrUpdater]) => !isUpdater(valueOrUpdater),
-            ),
-          );
-          contextAtom[atomSetter](Object.freeze(filteredValue));
-        };
-
-        // Initial update
-        updateContextAtom();
-
-        // Subscribe to changes
-        this.subscribe(updateContextAtom);
-
-        return contextAtom;
       }
 
       private computeValue() {

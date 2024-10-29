@@ -198,4 +198,55 @@ describe('state manager', () => {
     expect(s.value.count).toBe(6);
     expect(s.value.fruitNameAndCount).toBe('I have 6 Grapes');
   });
+
+  describe('writable signals', () => {
+    test('multiple writes to same signal', () => {
+      const state = defineState((atom) => () => {
+        const count = atom(0);
+        count.value = 1;
+        count.value = 2;
+        count.value = 3;
+        return { count };
+      });
+
+      const s = state();
+      expect(s.value.count).toBe(3);
+    });
+
+    test('writes trigger computed updates', () => {
+      const state = defineState((atom, computed) => () => {
+        const first = atom('foo');
+        const last = atom('bar');
+        const fullName = computed({ first, last }, ({ first, last }) => `${first} ${last}`);
+
+        first.value = 'baz';
+
+        return { first, last, fullName };
+      });
+
+      const s = state();
+      expect(s.value.fullName).toBe('baz bar');
+    });
+
+    test('writes and updates can be mixed', () => {
+      const state = defineState((atom, computed, update) => () => {
+        const count = atom(0);
+        const double = computed({ count }, ({ count }) => (count as number) * 2);
+
+        const increment = update({ count }, ({ count }) => ({ count: count + 1 }));
+
+        count.value = 5; // Direct write
+
+        return { count, double, increment };
+      });
+
+      const s = state();
+      expect(s.value.count).toBe(5);
+      expect(s.value.double).toBe(10);
+
+      s.value.increment(); // Update via updater
+      expect(s.value.count).toBe(6);
+      expect(s.value.double).toBe(12);
+    });
+  });
 });
