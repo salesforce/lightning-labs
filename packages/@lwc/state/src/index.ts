@@ -1,21 +1,20 @@
 import { type Signal, SignalBaseClass } from '@lwc/signals';
+import type { ContextRuntimeAdapter } from './runtime-interface.js';
+import { connectContext } from './shared.js';
 import type {
-  ContextSignal,
   Computer,
-  UnwrapSignal,
+  DefineState,
+  ExposedUpdater,
   MakeAtom,
   MakeComputed,
-  MakeUpdate,
   MakeContextHook,
-  ExposedUpdater,
-  DefineState,
+  MakeUpdate,
+  UnwrapSignal,
 } from './types.ts';
-import type { ContextRuntimeAdapter } from './runtime-interface.js';
+export { setTrustedSignalSet } from '@lwc/signals';
 
 const atomSetter = Symbol('atomSetter');
-export const contextID = Symbol('contextID');
-
-export const connectContext = Symbol('connectContext');
+const contextID = Symbol('contextID');
 
 export { ContextfulLightningElement } from './contextful-lwc.js';
 

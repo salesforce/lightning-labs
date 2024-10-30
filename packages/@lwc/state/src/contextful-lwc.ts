@@ -1,7 +1,7 @@
 import type { Signal } from '@lwc/signals';
 import { LightningElement } from 'lwc';
 import { ContextRequestEvent, type ContextProvidedCallback, symbolContextKey } from './event.js';
-import { connectContext } from './index.js';
+import { connectContext } from './shared.js';
 import type { ContextRuntimeAdapter } from './runtime-interface.js';
 
 export class ContextfulLightningElement extends LightningElement {

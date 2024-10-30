@@ -10,7 +10,9 @@
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "npm run build:dist && npm run build:bundle",
+    "build:dist": "tsc",
+    "build:bundle": "node esbuild.mjs",
     "test": "vitest"
   },
   "license": "MIT",
@@ -22,6 +24,7 @@
   "files": ["dist/**/*"],
   "dependencies": {
     "@lwc/signals": "^8.0.0",
-    "lwc": "^8.0.0"
+    "esbuild": "^0.24.0",
+    "lwc": "^8.3.0"
   }
 }
