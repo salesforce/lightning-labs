@@ -130,3 +130,9 @@ export default class Counter extends ContextfulLightningElement {
   theme = useTheme();
 }
 ```
+
+
+## Enable Experimental Signals
+
+To use reactive updates in your templates, you need to enable the experimental signals feature flag in your [LWC configuration](https://github.com/salesforce/lwc/tree/master/packages/%40lwc/features).
+
