@@ -20,6 +20,22 @@ npm install @lwc/state
 yarn add @lwc/state
 ```
 
+## API Reference
+
+### defineState
+
+The main function for creating state definitions. It provides four utilities:
+
+- `atom<T>(initialValue: T)`: Creates a reactive atomic value
+- `computed(signals, computeFn)`: Creates derived state based on provided signals map
+- `update(signals, updateFn)`: Creates state mutation functions
+- `fromContext(stateDefinition)`: Consumes context from parent components
+
+### ContextfulLightningElement
+
+Base class that enables context functionality in your components. Extend from this instead of `LightningElement` when using context for both parent and child components.
+
+
 ## Usage
 
 ### Basic State Management
@@ -114,18 +130,3 @@ export default class Counter extends ContextfulLightningElement {
   theme = useTheme();
 }
 ```
-
-## API Reference
-
-### defineState
-
-The main function for creating state definitions. It provides four utilities:
-
-- `atom<T>(initialValue: T)`: Creates a reactive atomic value
-- `computed(signals, computeFn)`: Creates derived state based on provided signals map
-- `update(signals, updateFn)`: Creates state mutation functions
-- `fromContext(stateDefinition)`: Consumes context from parent components
-
-### ContextfulLightningElement
-
-Base class that enables context functionality in your components. Extend from this instead of `LightningElement` when using context for both parent and child components.
