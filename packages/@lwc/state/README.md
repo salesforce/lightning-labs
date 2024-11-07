@@ -120,10 +120,10 @@ export default useTheme;
 
 ```
 
-To use context in your components, extend from `ContextfulLightningElement`:
+To provide and consume context in your components, extend from `ContextfulLightningElement`:
 
 ```typescript
-import { ContextfulLightningElement } from '@lwc/state';
+import { ContextfulLightningElement } from '@lwc/state/context';
 import useTheme from '../xyz';
 
 export default class Counter extends ContextfulLightningElement {
