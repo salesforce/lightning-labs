@@ -1,6 +1,6 @@
 import { type Signal, SignalBaseClass } from '@lwc/signals';
 import type { ContextRuntimeAdapter } from './runtime-interface.js';
-import { connectContext } from './shared.js';
+import { connectContext, disconnectContext } from './shared.js';
 import type {
   Computer,
   DefineState,
@@ -149,6 +149,7 @@ export const defineState: DefineState = <
       private contextConsumptionQueue: Array<
         (runtimeAdapter: ContextRuntimeAdapter<object>) => void
       > = [];
+      private contextUnsubscribes = new Map<symbol, Array<() => void>>();
 
       constructor() {
         super();
@@ -181,9 +182,12 @@ export const defineState: DefineState = <
                 localContextSignal[atomSetter](providedContextSignal.value);
                 // TODO: capture this unsubscribe in a map somewhere so that when the state manager disconnects
                 //       from the DOM, we can disconnect the context as well.
-                const _unsubscribe = providedContextSignal.subscribe(() => {
+                const unsub = providedContextSignal.subscribe(() => {
                   localContextSignal[atomSetter](providedContextSignal.value);
                 });
+                const unsubArray = this.contextUnsubscribes.get(runtimeAdapter.component) ?? [];
+                unsubArray.push(unsub);
+                this.contextUnsubscribes.set(runtimeAdapter.component, unsubArray);
               },
             );
           });
@@ -224,6 +228,18 @@ export const defineState: DefineState = <
         // points?
         // TODO: just pick a behavior, get it working in the example, make the decision once
         // we have something concrete to work with, write a test, and then work backwards
+      }
+
+      [disconnectContext](componentId: ContextRuntimeAdapter<object>['component']) {
+        const unsubArray = this.contextUnsubscribes.get(componentId);
+
+        if (!unsubArray || unsubArray.length === 0) {
+          return;
+        }
+
+        for (const unsub of unsubArray) {
+          unsub();
+        }
       }
 
       private shareableContext(): ContextAtomSignal<unknown> {
