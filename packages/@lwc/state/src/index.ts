@@ -178,8 +178,6 @@ export const defineState: DefineState = <
               (providedContextSignal: Signal<T>) => {
                 // Make sure the local signal initially shares the same value as the provided context signal.
                 localContextSignal[atomSetter](providedContextSignal.value);
-                // TODO: capture this unsubscribe in a map somewhere so that when the state manager disconnects
-                //       from the DOM, we can disconnect the context as well.
                 const unsub = providedContextSignal.subscribe(() => {
                   localContextSignal[atomSetter](providedContextSignal.value);
                 });
