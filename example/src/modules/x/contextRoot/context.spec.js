@@ -76,4 +76,22 @@ describe('context', () => {
     expect(grandChildContentParent.innerText).to.include('parentFoo');
     expect(grandChildContentChild.innerText).to.include('bar');
   });
+
+  it('disconnecting child remove it subscriptions to parent state context', async () => {
+    const el = await clientSideRender(parentEl, componentPath, {});
+    const contextParent = querySelectorDeep('x-context-parent');
+
+    // 1. <x-context-parent>
+    // 2. <x-context-child>
+    // 3. <x-context-grand-child>
+    expect(contextParent.parentState.subscribers.size).toBe(3);
+
+    // 1. <x-context-parent>
+    // grand child is nested within context child
+    // both of them should unsubscribe after removing child
+    contextParent.showChild = false;
+    await freshRender();
+
+    expect(contextParent.parentState.subscribers.size).toBe(1);
+  });
 });
