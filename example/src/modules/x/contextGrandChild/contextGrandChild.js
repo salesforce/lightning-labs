@@ -1,4 +1,4 @@
-import { ContextfulLightningElement } from '@lwc/state';
+import { ContextfulLightningElement } from '@lwc/state/context';
 import childStateFactory from 'x/childState';
 import grandChildStateFactory from 'x/grandChildState';
 

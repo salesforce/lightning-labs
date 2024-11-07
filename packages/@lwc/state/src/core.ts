@@ -5,4 +5,5 @@ const trustedSignalSet = new WeakSet();
 lwcSetTrustedSignalSet(trustedSignalSet);
 signalsSetTrustedSignalSet(trustedSignalSet);
 
-export { defineState, ContextfulLightningElement } from './index.js';
+export { defineState } from './index.js';
+export { ContextfulLightningElement } from './contextful-lwc.js';
