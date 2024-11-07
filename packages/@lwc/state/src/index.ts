@@ -16,8 +16,6 @@ export { setTrustedSignalSet } from '@lwc/signals';
 const atomSetter = Symbol('atomSetter');
 const contextID = Symbol('contextID');
 
-export { ContextfulLightningElement } from './contextful-lwc.js';
-
 // New interface for context-related methods
 export interface ContextManager {
   [connectContext](contextAdapter: ContextRuntimeAdapter<object>): void;

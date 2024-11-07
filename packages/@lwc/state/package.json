@@ -1,6 +1,6 @@
 {
   "name": "@lwc/state",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "State management using Signals",
   "repository": {
     "type": "git",
@@ -9,6 +9,10 @@
   },
   "type": "module",
   "main": "dist/index.js",
+  "exports": {
+    ".": "./dist/index.js",
+    "./context": "./dist/contextful-lwc.js"
+  },
   "scripts": {
     "build": "npm run build:dist && npm run build:bundle",
     "build:dist": "tsc",
