@@ -185,8 +185,7 @@ export const defineState: DefineState = <
                 if (!this.contextUnsubscribes.has(runtimeAdapter.component)) {
                   this.contextUnsubscribes.set(runtimeAdapter.component, []);
                 }
-                const unsubArray = this.contextUnsubscribes.get(runtimeAdapter.component);
-                unsubArray.push(unsub);
+                this.contextUnsubscribes.get(runtimeAdapter.component).push(unsub);
               },
             );
           });
