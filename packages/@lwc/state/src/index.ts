@@ -181,15 +181,15 @@ export const defineState: DefineState = <
                 const unsub = providedContextSignal.subscribe(() => {
                   localContextSignal[atomSetter](providedContextSignal.value);
                 });
-                const unsubArray = this.contextUnsubscribes.get(runtimeAdapter.component) ?? [];
+
+                if (!this.contextUnsubscribes.has(runtimeAdapter.component)) {
+                  this.contextUnsubscribes.set(runtimeAdapter.component, []);
+                }
+                const unsubArray = this.contextUnsubscribes.get(runtimeAdapter.component);
                 unsubArray.push(unsub);
-                this.contextUnsubscribes.set(runtimeAdapter.component, unsubArray);
               },
             );
           });
-
-          // TODO: if this.runtimeAdapter is null but is not-null in the future, we'll need to connect
-          //       to context in the same way we have done above.
 
           return localContextSignal;
         };
