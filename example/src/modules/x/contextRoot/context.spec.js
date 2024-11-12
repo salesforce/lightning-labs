@@ -77,7 +77,7 @@ describe('context', () => {
     expect(grandChildContentChild.innerText).to.include('bar');
   });
 
-  it('disconnecting child remove it subscriptions to parent state context', async () => {
+  it('disconnecting child removes its subscriptions to parent state context', async () => {
     const el = await clientSideRender(parentEl, componentPath, {});
     const contextParent = querySelectorDeep('x-context-parent');
 
