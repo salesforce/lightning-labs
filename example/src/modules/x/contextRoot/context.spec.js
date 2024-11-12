@@ -96,4 +96,10 @@ describe('context', () => {
 
     expect(contextParent.parentState.subscribers.size).toBe(1);
   });
+
+  it('children can access context directly with detached fromContext', async () => {
+    const el = await clientSideRender(parentEl, componentPath, {});
+    const childWithDetachedFromContext = querySelectorDeep('.child-content-detached', el);
+    expect(childWithDetachedFromContext.innerText).to.include('parentFoo');
+  });
 });
