@@ -1,12 +1,16 @@
 import type { Signal } from '@lwc/signals';
 import { LightningElement } from 'lwc';
 import { ContextRequestEvent, type ContextProvidedCallback, symbolContextKey } from './event.js';
-import { connectContext } from './shared.js';
+import { connectContext, disconnectContext } from './shared.js';
 import type { ContextRuntimeAdapter } from './runtime-interface.js';
 
 export class ContextfulLightningElement extends LightningElement {
   connectedCallback(): void {
     this.setupContextReactivity();
+  }
+
+  disconnectedCallback(): void {
+    this.cleanupContext();
   }
 
   private setupContextReactivity() {
@@ -24,6 +28,7 @@ export class ContextfulLightningElement extends LightningElement {
 
     const contextRuntimeAdapter: ContextRuntimeAdapter<LightningElement> = {
       isServerSide: false,
+      component: this,
 
       provideContext<T extends object>(
         contextVariety: T,
@@ -72,6 +77,20 @@ export class ContextfulLightningElement extends LightningElement {
 
     for (const contextfulField of contextfulFields) {
       this[contextfulField][connectContext](contextRuntimeAdapter);
+    }
+  }
+
+  private cleanupContext() {
+    const contextfulFields = Object.getOwnPropertyNames(Object.getPrototypeOf(this)).filter(
+      (propName) => this[propName]?.[disconnectContext],
+    );
+
+    if (contextfulFields.length === 0) {
+      return;
+    }
+
+    for (const contextfulField of contextfulFields) {
+      this[contextfulField][disconnectContext](this);
     }
   }
 }

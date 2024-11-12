@@ -1,5 +1,7 @@
 <template>
   <h3>Parent</h3>
-  <x-context-child></x-context-child>
+  <template lwc:if={showChild}>
+    <x-context-child></x-context-child>
+  </template>
   <x-context-child-sibling></x-context-child-sibling>
 </template>
