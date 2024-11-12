@@ -81,14 +81,16 @@ describe('context', () => {
     const el = await clientSideRender(parentEl, componentPath, {});
     const contextParent = querySelectorDeep('x-context-parent');
 
+    // Current active subscriptions
     // 1. <x-context-parent>
     // 2. <x-context-child>
     // 3. <x-context-grand-child>
     expect(contextParent.parentState.subscribers.size).toBe(3);
 
-    // 1. <x-context-parent>
-    // grand child is nested within context child
-    // both of them should unsubscribe after removing child
+    // Only active subscription to parent State will be
+    // LWC framework subscribing to component <x-context-parent>
+    // subscription of context child and grand child
+    // should be removed after unsubscribing
     contextParent.showChild = false;
     await freshRender();
 
