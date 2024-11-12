@@ -91,7 +91,7 @@ describe('context', () => {
     // LWC framework subscribing to component <x-context-parent>
     // subscription of context child and grand child
     // should be removed after unsubscribing
-    contextParent.showChild = false;
+    contextParent.hideChild = true;
     await freshRender();
 
     expect(contextParent.parentState.subscribers.size).toBe(1);

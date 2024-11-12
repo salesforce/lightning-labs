@@ -7,5 +7,9 @@ export default class ContextParent extends ContextfulLightningElement {
   parentState = parentStateFactory('parentFoo');
 
   @api
-  showChild = !false;
+  hideChild = false;
+
+  get showChild() {
+    return !this.hideChild;
+  }
 }

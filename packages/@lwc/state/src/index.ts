@@ -147,7 +147,7 @@ export const defineState: DefineState = <
       private contextConsumptionQueue: Array<
         (runtimeAdapter: ContextRuntimeAdapter<object>) => void
       > = [];
-      private contextUnsubscribes = new WeakMap<symbol, Array<() => void>>();
+      private contextUnsubscribes = new WeakMap<object, Array<() => void>>();
 
       constructor() {
         super();

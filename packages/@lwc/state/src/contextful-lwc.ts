@@ -5,9 +5,6 @@ import { connectContext, disconnectContext } from './shared.js';
 import type { ContextRuntimeAdapter } from './runtime-interface.js';
 
 export class ContextfulLightningElement extends LightningElement {
-  // TODO: check if we can re-use LightningElement.id
-  private componentId = Symbol('componentId');
-
   connectedCallback(): void {
     this.setupContextReactivity();
   }
@@ -31,7 +28,7 @@ export class ContextfulLightningElement extends LightningElement {
 
     const contextRuntimeAdapter: ContextRuntimeAdapter<LightningElement> = {
       isServerSide: false,
-      component: this.componentId,
+      component: this,
 
       provideContext<T extends object>(
         contextVariety: T,
@@ -93,7 +90,7 @@ export class ContextfulLightningElement extends LightningElement {
     }
 
     for (const contextfulField of contextfulFields) {
-      this[contextfulField][disconnectContext](this.componentId);
+      this[contextfulField][disconnectContext](this);
     }
   }
 }

@@ -4,7 +4,7 @@
     "module": "nodeNext",
     "moduleResolution": "nodeNext",
     "esModuleInterop": false,
-    "target": "ES2023",
+    "target": "ES2021",
     "sourceMap": true,
     "outDir": "dist",
     "noImplicitThis": true,
