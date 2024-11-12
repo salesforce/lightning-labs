@@ -147,7 +147,7 @@ export const defineState: DefineState = <
       private contextConsumptionQueue: Array<
         (runtimeAdapter: ContextRuntimeAdapter<object>) => void
       > = [];
-      private contextUnsubscribes = new Map<symbol, Array<() => void>>();
+      private contextUnsubscribes = new WeakMap<symbol, Array<() => void>>();
 
       constructor() {
         super();
@@ -228,12 +228,12 @@ export const defineState: DefineState = <
       [disconnectContext](componentId: ContextRuntimeAdapter<object>['component']) {
         const unsubArray = this.contextUnsubscribes.get(componentId);
 
-        if (!unsubArray || unsubArray.length === 0) {
+        if (!unsubArray) {
           return;
         }
 
-        for (const unsub of unsubArray) {
-          unsub();
+        while (unsubArray.length !== 0) {
+          unsubArray.pop()();
         }
       }
 
