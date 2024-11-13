@@ -99,18 +99,18 @@ describe('context', () => {
   });
 
   it('can provide multiple context of different varieties', async () => {
-    const el = await clientSideRender(parentEl, componentPath, {});
-    const childContent = querySelectorDeep('.child-content', el);
-    const anotherChildContent = querySelectorDeep('.another-child-content', el);
+    await clientSideRender(parentEl, componentPath, {});
+    const childContent = querySelectorDeep('.child-content');
+    const anotherChildContent = querySelectorDeep('.another-child-content');
 
-    await freshRender();
     expect(childContent.innerText).to.include('parentFoo');
     expect(anotherChildContent.innerText).to.include('anotherFoo');
   });
 
   it('logs an error when multiple contexts of same variety are provided', async () => {
     const errorSpy = sinon.spy(console, 'error');
-    const el = await clientSideRender(parentEl, componentPath, {
+    // context parent already has a state manager of type parentStateFactory
+    await clientSideRender(parentEl, componentPath, {
       dupParentState: parentStateFactory(),
     });
 
