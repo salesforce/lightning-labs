@@ -59,6 +59,14 @@ export class ContextfulLightningElement extends LightningElement {
             }
           });
         }
+
+        if (providedContextVarieties.has(contextVariety)) {
+          console.error(
+            'Multiple contexts of the same variety were provided. Only the first context will be used.',
+          );
+          return;
+        }
+
         providedContextVarieties.set(contextVariety, providedContextSignal);
       },
 

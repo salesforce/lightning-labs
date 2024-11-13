@@ -1,3 +1,6 @@
-import { LightningElement } from 'lwc';
+import { LightningElement, api } from 'lwc';
 
-export default class ContextRoot extends LightningElement {}
+export default class ContextRoot extends LightningElement {
+  @api
+  dupParentState;
+}
