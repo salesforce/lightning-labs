@@ -12,6 +12,7 @@ import type {
   UnwrapSignal,
 } from './types.ts';
 export { setTrustedSignalSet } from '@lwc/signals';
+export { fromContext } from './standalone-context.js';
 
 const atomSetter = Symbol('atomSetter');
 const contextID = Symbol('contextID');
