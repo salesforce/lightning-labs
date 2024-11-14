@@ -39,6 +39,7 @@ class ConsumedContextSignal<StateShape extends ValidStateShape>
         this.notify();
         this.unsubscribe = providedContextSignal.subscribe(() => {
           this._value = providedContextSignal.value;
+          this.notify()
         });
       },
     );
