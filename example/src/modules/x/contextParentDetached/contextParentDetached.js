@@ -5,4 +5,11 @@ import parentStateFactory from 'x/parentState';
 export default class ContextParent extends ContextfulLightningElement {
   @api
   parentState = parentStateFactory('parentFoo');
+
+  @api
+  hideChild = false;
+
+  get showChild() {
+    return !this.hideChild;
+  }
 }
