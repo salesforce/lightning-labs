@@ -60,7 +60,10 @@ export class ContextfulLightningElement extends LightningElement {
           });
         }
 
-        if (providedContextVarieties.has(contextVariety)) {
+        let multipleContextWarningShown = false;
+
+        if (providedContextVarieties.has(contextVariety) && !multipleContextWarningShown) {
+          multipleContextWarningShown = true;
           console.error(
             'Multiple contexts of the same variety were provided. Only the first context will be used.',
           );
