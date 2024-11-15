@@ -1,4 +1,5 @@
-import { expect, querySelectorDeep, clientSideRender } from '@lwc/test-runner';
+import { expect, querySelectorDeep, clientSideRender, sinon } from '@lwc/test-runner';
+import parentStateFactory from '../parentState/parentState.js';
 
 const componentPath = import.meta.resolve('./contextRoot.js');
 
@@ -95,6 +96,28 @@ describe('context', () => {
     await freshRender();
 
     expect(contextParent.parentState.subscribers.size).toBe(1);
+  });
+
+  it('can provide multiple context of different varieties', async () => {
+    await clientSideRender(parentEl, componentPath, {});
+    const childContent = querySelectorDeep('.child-content');
+    const anotherChildContent = querySelectorDeep('.another-child-content');
+
+    expect(childContent.innerText).to.include('parentFoo');
+    expect(anotherChildContent.innerText).to.include('anotherFoo');
+  });
+
+  it('logs an error when multiple contexts of same variety are provided', async () => {
+    const errorSpy = sinon.spy(console, 'error');
+    // context parent already has a state manager of type parentStateFactory
+    await clientSideRender(parentEl, componentPath, {
+      dupParentState: parentStateFactory(),
+    });
+
+    expect(errorSpy.callCount).to.equal(1);
+    expect(errorSpy).to.have.been.calledWith(
+      'Multiple contexts of the same variety were provided. Only the first context will be used.',
+    );
   });
 
   it('children can access context directly with detached fromContext', async () => {

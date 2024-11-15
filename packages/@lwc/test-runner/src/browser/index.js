@@ -1,6 +1,7 @@
 import { querySelectorAllDeep, querySelectorDeep } from 'query-selector-shadow-dom';
 import { helpers } from '@lwc/wds-core/browser';
 import { expect } from './expect.js';
+import sinon from 'sinon';
 import './layout-shifts.js';
 import './lwc-life-cycle.js';
 import './mutations.js';
@@ -28,4 +29,5 @@ export {
   renderToMarkup,
   wireMockUtil,
   setHooks,
+  sinon,
 };

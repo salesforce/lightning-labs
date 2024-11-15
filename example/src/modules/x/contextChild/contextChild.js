@@ -7,4 +7,8 @@ export default class ContextChild extends ContextfulLightningElement {
   get nameProvidedByParent() {
     return this.childState.value.parentState.value?.name ?? 'not available';
   }
+
+  get anotherNameProvidedByParent() {
+    return this.childState.value.anotherParentState.value?.name ?? 'not available';
+  }
 }
