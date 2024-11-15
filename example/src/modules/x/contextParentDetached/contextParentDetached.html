@@ -1,3 +1,5 @@
 <template>
-  <x-context-child-detached></x-context-child-detached>
+  <template lwc:if={showChild}>
+    <x-context-child-detached></x-context-child-detached>
+  </template>
 </template>

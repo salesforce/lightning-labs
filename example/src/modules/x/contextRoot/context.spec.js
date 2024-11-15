@@ -83,13 +83,13 @@ describe('context', () => {
     const contextParent = querySelectorDeep('x-context-parent');
 
     // Current active subscriptions
-    // 1. <x-context-parent>
+    // 1. <x-context-child-sibling>
     // 2. <x-context-child>
     // 3. <x-context-grand-child>
     expect(contextParent.parentState.subscribers.size).toBe(3);
 
     // Only active subscription to parent State will be
-    // LWC framework subscribing to component <x-context-parent>
+    // from component: <x-context-child-sibling>
     // subscription of context child and grand child
     // should be removed after unsubscribing
     contextParent.hideChild = true;
@@ -124,5 +124,17 @@ describe('context', () => {
     const el = await clientSideRender(parentEl, componentPath, {});
     const childWithDetachedFromContext = querySelectorDeep('.child-content-detached', el);
     expect(childWithDetachedFromContext.innerText).to.include('parentFoo');
+  });
+
+  it('standalone context is unsubscribed once the child disconnects', async () => {
+    const el = await clientSideRender(parentEl, componentPath, {});
+    const contextParentDetached = querySelectorDeep('x-context-parent-detached', el);
+
+    expect(contextParentDetached.parentState.subscribers.size).toBe(1);
+
+    contextParentDetached.hideChild = true;
+    await freshRender();
+
+    expect(contextParentDetached.parentState.subscribers.size).toBe(0);
   });
 });

@@ -1,4 +1,4 @@
-import { connectContext } from './shared.js';
+import { connectContext, disconnectContext } from './shared.js';
 import { SignalBaseClass, type Signal } from '@lwc/signals';
 import type { ExposedUpdater } from './types.js';
 import type { ContextRuntimeAdapter } from './runtime-interface.js';
@@ -13,7 +13,6 @@ class ConsumedContextSignal<StateShape extends ValidStateShape>
 {
   private desiredStateDef: ValidStateDef<StateShape>;
   private _value: StateShape | null = null;
-  // Currently unused. Should be called once `disconnectContext` is implemented.
   private unsubscribe: () => void = () => {};
 
   constructor(stateDef: ValidStateDef<StateShape>) {
@@ -43,6 +42,15 @@ class ConsumedContextSignal<StateShape extends ValidStateShape>
         });
       },
     );
+  }
+
+  [disconnectContext](_componentId: ContextRuntimeAdapter<object>['component']) {
+    // Unlike the state manager's fromContext which can subscribe to multiple
+    // ancestor contexts simultaneously, this standalone version only subscribes
+    // to a single context at a time. Therefore, we don't need to use componentId
+    // to track subscriptions.
+    this.unsubscribe();
+    this.unsubscribe = () => {};
   }
 }
 
