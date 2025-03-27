@@ -122,6 +122,24 @@ const update: MakeUpdate = <
   };
 };
 
+function createStateManagerAtomsClosure() {
+  const smAtoms = new WeakSet();
+
+  return {
+    atom: <T,>(v: T) => {
+      const a = atom(v);
+      smAtoms.add(a);
+
+      return a;
+    },
+    setAtom: <T = unknown>(a: AtomSignal<T>, v: T) => {
+      if (smAtoms.has(a)) {
+        a[atomSetter](v);
+      }
+    },
+  };
+}
+
 export const defineState: DefineState = <
   InnerStateShape extends Record<string, Signal<unknown> | ExposedUpdater>,
   OuterStateShape extends {
@@ -135,6 +153,7 @@ export const defineState: DefineState = <
     computed: MakeComputed,
     update: MakeUpdate,
     fromContext: MakeContextHook<ContextShape>,
+    setAtom: <T>(signal: AtomSignal<T>, newValue: T) => void,
   ) => (...args: Args) => InnerStateShape,
 ) => {
   const stateDefinition = (...args: Args) => {
@@ -194,7 +213,14 @@ export const defineState: DefineState = <
           return localContextSignal;
         };
 
-        this.internalStateShape = defineStateCallback(atom, computed, update, fromContext)(...args);
+        const { atom, setAtom } = createStateManagerAtomsClosure();
+        this.internalStateShape = defineStateCallback(
+          atom,
+          computed,
+          update,
+          fromContext,
+          setAtom,
+        )(...args);
 
         for (const signalOrUpdater of Object.values(this.internalStateShape)) {
           if (signalOrUpdater && !isUpdater(signalOrUpdater)) {

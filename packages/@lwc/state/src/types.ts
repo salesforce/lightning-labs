@@ -52,5 +52,6 @@ export type DefineState = <
     computed: MakeComputed,
     update: MakeUpdate,
     fromContext: MakeContextHook<ContextShape>,
+    setAtom: <T>(a: Signal<T>, newValue: T) => void,
   ) => (...args: Args) => InnerStateShape,
 ) => (...args: Args) => Signal<OuterStateShape>;

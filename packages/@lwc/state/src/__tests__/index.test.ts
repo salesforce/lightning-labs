@@ -7,7 +7,16 @@ let fruitNameAndCountNotifySpy: any;
 // biome-ignore lint: test only
 let fruitNameAndCountComputeValueSpy: any;
 
-const state = defineState((atom, computed, update, _fromContext) => (...args) => {
+const anotherSM = defineState((atom) => (...args) => {
+  const exposedAtom = atom(1);
+
+  return {
+    exposedAtom,
+    getExposedAtom: () => exposedAtom,
+  };
+})();
+
+const state = defineState((atom, computed, update, _fromContext, setAtom) => (...args) => {
   const countArg = args[0] as number;
   const fruitArg = args[1] as string;
 
@@ -37,6 +46,15 @@ const state = defineState((atom, computed, update, _fromContext) => (...args) =>
     fruit: newFruit,
   }));
 
+  const multiplyBy = (num) => {
+    setAtom(count, count.value * num);
+  };
+
+  const tryModifyAtomsFromAnotherSM = () => {
+    const atomFromOtherSM = anotherSM.value.getExposedAtom();
+    setAtom(atomFromOtherSM, 3421);
+  };
+
   return {
     count,
     doubleCount,
@@ -44,6 +62,8 @@ const state = defineState((atom, computed, update, _fromContext) => (...args) =>
     incrementBy,
     fruitNameAndCount,
     changeFruit,
+    multiplyBy,
+    tryModifyAtomsFromAnotherSM,
   };
 });
 
@@ -87,6 +107,23 @@ describe('state manager', () => {
 
     expect(s.value.count).toBe(4);
     expect(s.value.doubleCount).toBe(8);
+  });
+
+  test('increment updates count and doubleCount', () => {
+    const s = state(1);
+    s.value.multiplyBy(3);
+
+    expect(s.value.count).toBe(3);
+    expect(s.value.doubleCount).toBe(6);
+  });
+
+  test('modifying atoms from another SM does not work', () => {
+    const s = state(1);
+
+    expect(anotherSM.value.exposedAtom).toBe(1);
+    s.value.tryModifyAtomsFromAnotherSM();
+
+    expect(anotherSM.value.exposedAtom).toBe(1);
   });
 
   test('multiple updates', () => {
