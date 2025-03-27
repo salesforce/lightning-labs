@@ -39,6 +39,13 @@ export type ExposedUpdater = (...updaterArgs: unknown[]) => void;
 
 export type ContextSignal<T> = Signal<T> & { id: symbol };
 
+export type ExposedAPIs<ContextShape> = {
+  atom: MakeAtom;
+  computed: MakeComputed;
+  update: MakeUpdate;
+  fromContext: MakeContextHook<ContextShape>;
+};
+
 export type DefineState = <
   InnerStateShape extends Record<string, Signal<unknown> | ExposedUpdater>,
   OuterStateShape extends {
@@ -47,10 +54,5 @@ export type DefineState = <
   Args extends unknown[],
   ContextShape,
 >(
-  defineStateCb: (
-    atom: MakeAtom,
-    computed: MakeComputed,
-    update: MakeUpdate,
-    fromContext: MakeContextHook<ContextShape>,
-  ) => (...args: Args) => InnerStateShape,
+  defineStateCb: (api: ExposedAPIs<ContextShape>) => (...args: Args) => InnerStateShape,
 ) => (...args: Args) => Signal<OuterStateShape>;

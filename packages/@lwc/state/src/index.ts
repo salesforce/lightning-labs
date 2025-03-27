@@ -4,6 +4,7 @@ import { connectContext, disconnectContext } from './shared.js';
 import type {
   Computer,
   DefineState,
+  ExposedAPIs,
   ExposedUpdater,
   MakeAtom,
   MakeComputed,
@@ -130,12 +131,7 @@ export const defineState: DefineState = <
   Args extends unknown[],
   ContextShape,
 >(
-  defineStateCallback: (
-    atom: MakeAtom,
-    computed: MakeComputed,
-    update: MakeUpdate,
-    fromContext: MakeContextHook<ContextShape>,
-  ) => (...args: Args) => InnerStateShape,
+  defineStateCallback: (api: ExposedAPIs<ContextShape>) => (...args: Args) => InnerStateShape,
 ) => {
   const stateDefinition = (...args: Args) => {
     class StateManagerSignal extends SignalBaseClass<OuterStateShape> implements ContextManager {
@@ -194,7 +190,12 @@ export const defineState: DefineState = <
           return localContextSignal;
         };
 
-        this.internalStateShape = defineStateCallback(atom, computed, update, fromContext)(...args);
+        this.internalStateShape = defineStateCallback({
+          atom,
+          computed,
+          update,
+          fromContext,
+        })(...args);
 
         for (const signalOrUpdater of Object.values(this.internalStateShape)) {
           if (signalOrUpdater && !isUpdater(signalOrUpdater)) {

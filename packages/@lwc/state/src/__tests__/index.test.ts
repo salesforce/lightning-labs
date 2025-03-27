@@ -7,7 +7,7 @@ let fruitNameAndCountNotifySpy: any;
 // biome-ignore lint: test only
 let fruitNameAndCountComputeValueSpy: any;
 
-const state = defineState((atom, computed, update, _fromContext) => (...args) => {
+const state = defineState(({ atom, computed, update }) => (...args) => {
   const countArg = args[0] as number;
   const fruitArg = args[1] as string;
 

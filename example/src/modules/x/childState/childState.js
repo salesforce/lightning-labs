@@ -2,7 +2,7 @@ import { defineState } from '@lwc/state';
 import parentStateFactory from 'x/parentState';
 import anotherParentStateFactory from 'x/anotherParentState';
 
-export default defineState((atom, _computed, update, fromContext) => (initialName = 'bar') => {
+export default defineState(({ atom, update, fromContext }) => (initialName = 'bar') => {
   const name = atom(initialName);
   const parentState = fromContext(parentStateFactory);
   const anotherParentState = fromContext(anotherParentStateFactory);

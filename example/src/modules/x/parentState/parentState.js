@@ -1,6 +1,6 @@
 import { defineState } from '@lwc/state';
 
-export default defineState((atom, computed, update, fromContext) => (initialName = 'foo') => {
+export default defineState(({ atom, update }) => (initialName = 'foo') => {
   const name = atom(initialName);
 
   const updateName = update({ name }, (_, newName) => ({
