@@ -20,17 +20,6 @@ export type MakeComputed = <
 
 export type MutatorArgs = Array<unknown>;
 
-export type MakeUpdate = <
-  SignalSubType extends Signal<unknown>,
-  SignalsToMutate extends Record<string, SignalSubType>,
-  Values extends {
-    [SignalName in keyof SignalsToMutate]?: UnwrapSignal<SignalsToMutate[SignalName]>;
-  },
->(
-  signalsToMutate: SignalsToMutate,
-  mutator: (signalValues: Values, ...mutatorArgs: MutatorArgs) => Values,
-) => (...mutatorArgs: MutatorArgs) => void;
-
 export type MakeContextHook<T> = <StateDef extends () => Signal<T>>(
   stateDef: StateDef,
 ) => Signal<T>;
@@ -50,7 +39,6 @@ export type DefineState = <
   defineStateCb: (
     atom: MakeAtom,
     computed: MakeComputed,
-    update: MakeUpdate,
     fromContext: MakeContextHook<ContextShape>,
     setAtom: <T>(a: Signal<T>, newValue: T) => void,
   ) => (...args: Args) => InnerStateShape,

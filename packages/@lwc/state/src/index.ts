@@ -8,7 +8,6 @@ import type {
   MakeAtom,
   MakeComputed,
   MakeContextHook,
-  MakeUpdate,
   UnwrapSignal,
 } from './types.ts';
 export { setTrustedSignalSet } from '@lwc/signals';
@@ -95,33 +94,6 @@ const atom: MakeAtom = <T,>(initialValue: T) => new AtomSignal<T>(initialValue);
 const computed: MakeComputed = (inputSignalsObj, computer) =>
   new ComputedSignal(inputSignalsObj, computer);
 
-const update: MakeUpdate = <
-  SignalSubType extends Signal<unknown>,
-  AdditionalArguments extends unknown[],
-  Updater extends (signalValues: ValuesObj, ...args: AdditionalArguments) => ValuesObj,
-  SignalsObj extends Record<string, SignalSubType>,
-  ValuesObj extends {
-    [SignalName in keyof SignalsObj]?: UnwrapSignal<SignalsObj[SignalName]>;
-  },
->(
-  signalsToUpdate: SignalsObj,
-  userProvidedUpdaterFn: Updater,
-) => {
-  return (...uniqueArgs: AdditionalArguments) => {
-    const signalValues = {} as ValuesObj;
-
-    for (const [signalName, signal] of Object.entries(signalsToUpdate)) {
-      signalValues[signalName as keyof ValuesObj] = signal.value as ValuesObj[keyof ValuesObj];
-    }
-
-    const newValues = userProvidedUpdaterFn(signalValues, ...uniqueArgs);
-
-    for (const [atomName, newValue] of Object.entries(newValues)) {
-      signalsToUpdate[atomName][atomSetter](newValue);
-    }
-  };
-};
-
 function createStateManagerAtomsClosure() {
   const smAtoms = new WeakSet();
 
@@ -155,7 +127,6 @@ export const defineState: DefineState = <
   defineStateCallback: (
     atom: MakeAtom,
     computed: MakeComputed,
-    update: MakeUpdate,
     fromContext: MakeContextHook<ContextShape>,
     setAtom: <T>(signal: AtomSignal<T>, newValue: T) => void,
   ) => (...args: Args) => InnerStateShape,
@@ -221,7 +192,6 @@ export const defineState: DefineState = <
         this.internalStateShape = defineStateCallback(
           atom,
           computed,
-          update,
           fromContext,
           setAtom,
         )(...args);

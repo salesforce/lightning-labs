@@ -28,7 +28,6 @@ The main function for creating state definitions. It provides four utilities:
 
 - `atom<T>(initialValue: T)`: Creates a reactive atomic value
 - `computed(signals, computeFn)`: Creates derived state based on provided signals map
-- `update(signals, updateFn)`: Creates state mutation functions
 - `fromContext(stateDefinition)`: Consumes context from parent components
 - `setAtom<T>(signal: Signal<T>, newValue: T)`: Directly sets the value of an atom signal. Can only be used to modify atoms that were created within the same state manager instance. Attempting to modify atoms from other state managers will:
   - In development: Throw a ReferenceError
@@ -49,16 +48,16 @@ Create a state definition using `defineState`:
 import { defineState } from '@lwc/state';
 
 const useCounter = defineState(
-  (atom, computed, update, _fromContext, setAtom) =>
+  (atom, computed, _fromContext, setAtom) =>
     (initialValue = 0) => {
       // Create reactive atom
       const count = atom(initialValue);
       // Create computed value
       const doubleCount = computed({ count }, ({ count }) => count * 2);
       // Create update function
-      const increment = update({ count }, ({ count }) => ({
-        count: count + 1,
-      }));
+      const increment = () => {
+        setAtom(count, count.value + 1)
+      };
 
       // Create a function that directly sets the count atom
       const setCount = (newValue: number) => {
@@ -116,7 +115,7 @@ const context = defineState(
 import contextFactory from '<parentState>';
 
 const useTheme = defineState(
-  (_atom, _computed, _update, fromContext) =>
+  (_atom, _computed, fromContext) =>
     () => {
       const theme = fromContext(contextFactory);
         
