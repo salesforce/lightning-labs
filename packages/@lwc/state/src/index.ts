@@ -135,6 +135,10 @@ function createStateManagerAtomsClosure() {
     setAtom: <T = unknown>(a: AtomSignal<T>, v: T) => {
       if (smAtoms.has(a)) {
         a[atomSetter](v);
+      } else {
+        if (process.env.NODE_ENV !== 'production') {
+          throw new ReferenceError('The atom being set is not defined by this state manager.');
+        }
       }
     },
   };

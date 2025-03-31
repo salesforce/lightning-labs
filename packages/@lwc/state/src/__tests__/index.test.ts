@@ -117,13 +117,26 @@ describe('state manager', () => {
     expect(s.value.doubleCount).toBe(6);
   });
 
-  test('modifying atoms from another SM does not work', () => {
+  test('modifying atoms from another SM does not work in production', () => {
+    const beforeNodeEnvValue = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
+
     const s = state(1);
 
     expect(anotherSM.value.exposedAtom).toBe(1);
     s.value.tryModifyAtomsFromAnotherSM();
+    expect(anotherSM.value.exposedAtom).toBe(1);
+
+    process.env.NODE_ENV = beforeNodeEnvValue;
+  });
+
+  test('modifying atoms from another SM does not work in non-production environments', () => {
+    const s = state(1);
 
     expect(anotherSM.value.exposedAtom).toBe(1);
+    expect(() => s.value.tryModifyAtomsFromAnotherSM()).toThrow(
+      'The atom being set is not defined by this state manager.',
+    );
   });
 
   test('multiple updates', () => {
