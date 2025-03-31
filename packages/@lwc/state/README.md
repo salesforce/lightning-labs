@@ -30,6 +30,9 @@ The main function for creating state definitions. It provides four utilities:
 - `computed(signals, computeFn)`: Creates derived state based on provided signals map
 - `update(signals, updateFn)`: Creates state mutation functions
 - `fromContext(stateDefinition)`: Consumes context from parent components
+- `setAtom<T>(signal: Signal<T>, newValue: T)`: Directly sets the value of an atom signal. Can only be used to modify atoms that were created within the same state manager instance. Attempting to modify atoms from other state managers will:
+  - In development: Throw a ReferenceError
+  - In production: Silently fail without modifying the atom
 
 ### ContextfulLightningElement
 
@@ -46,7 +49,7 @@ Create a state definition using `defineState`:
 import { defineState } from '@lwc/state';
 
 const useCounter = defineState(
-  (atom, computed, update) =>
+  (atom, computed, update, _fromContext, setAtom) =>
     (initialValue = 0) => {
       // Create reactive atom
       const count = atom(initialValue);
@@ -56,10 +59,17 @@ const useCounter = defineState(
       const increment = update({ count }, ({ count }) => ({
         count: count + 1,
       }));
+
+      // Create a function that directly sets the count atom
+      const setCount = (newValue: number) => {
+        setAtom(count, newValue);
+      };
+
       return {
         count,
         doubleCount,
         increment,
+        setCount,
       };
     }
 );
