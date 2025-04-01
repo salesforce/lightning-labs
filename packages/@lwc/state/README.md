@@ -24,7 +24,7 @@ yarn add @lwc/state
 
 ### defineState
 
-The main function for creating state definitions. It provides four utilities:
+The main function for creating state definitions. It provides an object with four utilities:
 
 - `atom<T>(initialValue: T)`: Creates a reactive atomic value
 - `computed(signals, computeFn)`: Creates derived state based on provided signals map
@@ -46,7 +46,7 @@ Create a state definition using `defineState`:
 import { defineState } from '@lwc/state';
 
 const useCounter = defineState(
-  (atom, computed, update) =>
+  ({ atom, computed, update }) =>
     (initialValue = 0) => {
       // Create reactive atom
       const count = atom(initialValue);
@@ -106,7 +106,7 @@ const context = defineState(
 import contextFactory from '<parentState>';
 
 const useTheme = defineState(
-  (_atom, _computed, _update, fromContext) =>
+  ({ fromContext }) =>
     () => {
       const theme = fromContext(contextFactory);
         
