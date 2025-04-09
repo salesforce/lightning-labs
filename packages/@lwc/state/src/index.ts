@@ -46,32 +46,32 @@ class ContextAtomSignal<T> extends AtomSignal<T> {
 
 class ComputedSignal<T> extends SignalBaseClass<T> {
   private computer: Computer<unknown>;
-  private dependencies: Record<string, Signal<unknown>>;
+  private dependencies: Signal<unknown>[];
   private _value: T;
   private isStale = true;
 
-  constructor(inputSignalsObj: Record<string, Signal<unknown>>, computer: Computer<unknown>) {
+  constructor(inputSignals: Signal<unknown>[], computer: Computer<unknown>) {
     super();
     this.computer = computer;
-    this.dependencies = inputSignalsObj;
+    this.dependencies = inputSignals;
 
     const onUpdate = () => {
       this.isStale = true;
       this.notify();
     };
 
-    for (const signal of Object.values(inputSignalsObj)) {
+    for (const signal of inputSignals) {
       signal.subscribe(onUpdate);
     }
   }
 
   private computeValue() {
-    const dependencyValues: Record<string, unknown> = {};
-    for (const [signalName, signal] of Object.entries(this.dependencies)) {
-      dependencyValues[signalName] = signal.value;
+    const dependencyValues: unknown[] = [];
+    for (const [index, signal] of this.dependencies.entries()) {
+      dependencyValues[index] = signal.value;
     }
     this.isStale = false;
-    this._value = this.computer(dependencyValues) as T;
+    this._value = this.computer(...dependencyValues) as T;
   }
 
   protected override notify(): void {

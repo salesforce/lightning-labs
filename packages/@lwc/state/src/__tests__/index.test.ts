@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { defineState } from '../index.js';
+
 // biome-ignore lint: test only
 let doubleCountNotifySpy: any;
 // biome-ignore lint: test only
@@ -14,13 +15,13 @@ const state = defineState((atom, computed, update, _fromContext) => (...args) =>
   const count = atom(countArg);
   const fruit = atom(fruitArg);
 
-  const doubleCount = computed({ count }, ({ count: countValue }) => (countValue as number) * 2);
+  const doubleCount = computed([count], (countValue) => (countValue as number) * 2);
   // @ts-ignore
   doubleCountNotifySpy = vi.spyOn(doubleCount, 'notify');
 
   const fruitNameAndCount = computed(
-    { fruit, count },
-    ({ fruit, count }) => `I have ${count} ${fruit}${(count as number) > 1 ? 's' : ''}`,
+    [fruit, count],
+    (fruit, count) => `I have ${count} ${fruit}${(count as number) > 1 ? 's' : ''}`,
   );
   // @ts-ignore
   fruitNameAndCountNotifySpy = vi.spyOn(fruitNameAndCount, 'notify');

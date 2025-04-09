@@ -51,7 +51,7 @@ const useCounter = defineState(
       // Create reactive atom
       const count = atom(initialValue);
       // Create computed value
-      const doubleCount = computed({ count }, ({ count }) => count * 2);
+      const doubleCount = computed([count], (countValue) => countValue * 2);
       // Create update function
       const increment = update({ count }, ({ count }) => ({
         count: count + 1,

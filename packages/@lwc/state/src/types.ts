@@ -5,15 +5,9 @@ export type UnwrapSignal<T> = T extends Signal<infer Inner> ? Inner : T;
 
 export type MakeAtom = <T>(val: T) => Signal<T>;
 
-export type Computer<T> = (signalValues: Record<string, unknown>) => T;
+export type Computer<T> = (...signalValues: unknown[]) => T;
 
-export type MakeComputed = <
-  InputSignals extends Record<string, Signal<unknown>>,
-  SignalValues extends {
-    [SignalName in keyof InputSignals]: UnwrapSignal<InputSignals[SignalName]>;
-  },
-  ComputedType,
->(
+export type MakeComputed = <InputSignals extends Signal<unknown>[], ComputedType>(
   inputSignals: InputSignals,
   computer: Computer<ComputedType>,
 ) => Signal<ComputedType>;
