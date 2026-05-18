@@ -26,6 +26,12 @@ jobs:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
 
+    # Ubuntu 24.04 (ubuntu-latest) restricts unprivileged user namespaces
+    # via AppArmor, which prevents Puppeteer's bundled Chromium sandbox
+    # from starting ("No usable sandbox!"). Relax it on the CI runner.
+    - name: Allow unprivileged user namespaces (Puppeteer sandbox)
+      run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
     - name: Install dependencies
       run: npm install
 
