@@ -4,15 +4,25 @@
 
 Add `@lwc/test-runner` to your `devDependencies`. Invoke the command in `package.json` NPM `scripts` or use `npx`.
 
+> **Note on `npx`:** this package publishes a binary named `test-lwcs`, which does not match the package name `@lwc/test-runner`. If you run `npx test-lwcs` without first installing the package, `npx` will try to resolve `test-lwcs` against the public npm registry rather than this package. Always install `@lwc/test-runner` first (recommended), or use the `--package=@lwc/test-runner` form shown below to pin resolution to this scoped package.
+
 ## Basic usage
 
 ### Test Runner
 
-Similarly to the playground, the test runner should be run from the same directory as `lwc.config.json` or `package.json`. It is invoked like so:
+Similarly to the playground, the test runner should be run from the same directory as `lwc.config.json` or `package.json`. Install the package first, then invoke the bin:
 
 ```
 npm install --save-dev @lwc/test-runner
 npx test-lwcs SPEC_FILE_PATTERN
+```
+
+Once `@lwc/test-runner` is in your `devDependencies`, `npx test-lwcs` resolves to the local `node_modules/.bin/test-lwcs` and never touches the public registry.
+
+To run as a one-off without installing, pin the package explicitly so `npx` fetches the bin from `@lwc/test-runner`:
+
+```
+npx --package=@lwc/test-runner test-lwcs SPEC_FILE_PATTERN
 ```
 
 You may want to surround your `SPEC_FILE_PATTERN` in single quotes, depending on whether your shell automatically expands glob patterns (ZSH, for example).
@@ -22,6 +32,9 @@ To distinguish SSR-related tests from existing Jest tests, you will likely want 
 ```
 npx test-lwcs './src/**/*.spec.ssr.js'
 ````
+
+(In each of the examples below, `npx test-lwcs` assumes `@lwc/test-runner` is installed locally as shown in [Getting started](#getting-started). If it isn't, use `npx --package=@lwc/test-runner test-lwcs ...` instead.)
+
 You can use --quiet tag to supress console logs on terminal.
 ```
 npx test-lwcs './src/**/*.spec.ssr.js' --quiet
