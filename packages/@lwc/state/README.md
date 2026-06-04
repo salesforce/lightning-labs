@@ -1,5 +1,9 @@
 # @lwc/state
 
+NOTE - active development on this state management code has been moved to an internal Salesforce repo.
+This repo is available for historical purposes, but do not expect any new features or bug fixes to
+be integrated here.
+
 A state management solution for Lightning Web Components (LWC) using signals. This package provides utilities for creating and managing reactive state, computed values, and context within LWC applications.
 
 ## Features
