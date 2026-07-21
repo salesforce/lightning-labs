@@ -28,7 +28,7 @@
   "files": ["dist/**/*"],
   "dependencies": {
     "@lwc/signals": "^8.0.0",
-    "esbuild": "^0.24.0"
+    "esbuild": "^0.25.0"
   },
   "peerDependencies": {
     "lwc": ">=8"
